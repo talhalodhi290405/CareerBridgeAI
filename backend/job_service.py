@@ -91,11 +91,16 @@ def fetch_adzuna_jobs(query: str = "software engineer", location: str = "", coun
             desc = _clean_html(item.get("description", ""))
             req_s, pref_s = _extract_skills_from_description(desc)
             loc_area = item.get("location", {}).get("display_name", location or "Remote/Onsite")
+            title = item.get("title", query.title())
+            company = item.get("company", {}).get("display_name", "Tech Company")
+            job_url = item.get("redirect_url") or item.get("url")
+            if not job_url or not str(job_url).startswith("http"):
+                job_url = f"https://www.google.com/search?q={urllib.parse.quote(title + ' ' + company + ' apply')}"
             
             posting = JobPosting(
                 id=f"adzuna_{item.get('id')}",
-                title=item.get("title", query.title()),
-                company=item.get("company", {}).get("display_name", "Tech Company"),
+                title=title,
+                company=company,
                 location=loc_area,
                 country=country_code.upper() if country_code else "US",
                 city=location if location else loc_area.split(",")[0],
@@ -109,7 +114,7 @@ def fetch_adzuna_jobs(query: str = "software engineer", location: str = "", coun
                 salary_max=item.get("salary_max"),
                 salary_currency="USD" if c_code == "us" else "GBP" if c_code == "gb" else "EUR",
                 posted_date=item.get("created", "")[:10],
-                url=item.get("redirect_url"),
+                url=job_url,
                 source="Adzuna",
                 required_skills=req_s,
                 preferred_skills=pref_s,
@@ -153,6 +158,10 @@ def fetch_jobicy_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
             if isinstance(emp_type, list):
                 emp_type = ", ".join(str(x) for x in emp_type)
 
+            job_url = item.get("url")
+            if not job_url or not str(job_url).startswith("http"):
+                job_url = f"https://www.google.com/search?q={urllib.parse.quote(title + ' ' + company + ' apply')}"
+
             posting = JobPosting(
                 id=f"jobicy_{item.get('id', title[:15])}",
                 title=title,
@@ -168,7 +177,7 @@ def fetch_jobicy_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
                 salary_max=float(item.get("annualSalaryMax")) if item.get("annualSalaryMax") else None,
                 salary_currency=item.get("salaryCurrency", "USD"),
                 posted_date=str(item.get("pubDate", ""))[:10],
-                url=item.get("url"),
+                url=job_url,
                 source="Jobicy",
                 required_skills=req_s,
                 preferred_skills=pref_s,
@@ -217,6 +226,10 @@ def fetch_arbeitnow_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
             req_s, pref_s = _extract_skills_from_description(desc)
             is_remote = item.get("remote", False) or "remote" in desc.lower()
 
+            job_url = item.get("url")
+            if not job_url or not str(job_url).startswith("http"):
+                job_url = f"https://www.google.com/search?q={urllib.parse.quote(title + ' ' + company + ' apply')}"
+
             posting = JobPosting(
                 id=f"arbeitnow_{item.get('slug', title[:15])}",
                 title=title,
@@ -229,7 +242,7 @@ def fetch_arbeitnow_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
                 description=desc if len(desc) > 100 else f"{title} position at {company}.",
                 description_is_snippet=False,
                 posted_date=str(item.get("created_at", ""))[:10] if item.get("created_at") else "",
-                url=item.get("url"),
+                url=job_url,
                 source="Arbeitnow",
                 required_skills=req_s,
                 preferred_skills=pref_s,
@@ -275,6 +288,10 @@ def fetch_remotive_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
             desc = _clean_html(item.get("description", ""))
             req_s, pref_s = _extract_skills_from_description(desc)
 
+            job_url = item.get("url")
+            if not job_url or not str(job_url).startswith("http"):
+                job_url = f"https://www.google.com/search?q={urllib.parse.quote(title + ' ' + company + ' apply')}"
+
             posting = JobPosting(
                 id=f"remotive_{item.get('id')}",
                 title=title,
@@ -288,7 +305,7 @@ def fetch_remotive_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
                 description_is_snippet=False,
                 salary_currency="USD",
                 posted_date=str(item.get("publication_date", ""))[:10],
-                url=item.get("url"),
+                url=job_url,
                 source="Remotive",
                 required_skills=req_s,
                 preferred_skills=pref_s,
@@ -302,6 +319,7 @@ def fetch_remotive_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
     except Exception as e:
         logger.error(f"Remotive API failed: {e}")
         return []
+
 
 
 def _deduplicate_jobs(jobs: list[JobPosting]) -> list[JobPosting]:

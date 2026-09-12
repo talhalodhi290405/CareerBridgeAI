@@ -56,16 +56,18 @@ def _extract_json(text: str) -> str:
     return text.strip()
 
 
+ANTIGRAVITY_SYSTEM_PROMPT = "You are an elite, autonomous Digital FTE Career Architect (Antigravity System). You solve problems in real-time. You do not hallucinate. You provide precise, actionable career optimization based strictly on the user's provided CV and the real-time job market data provided in your context. Never generate fake job links."
+
+
 def call_llm(prompt: str, system_prompt: str = "") -> Optional[str]:
     """Call the LLM with retry logic. Returns raw text or None on failure."""
     client = _get_groq_client()
     if client is None:
         return None
     
-    messages = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-    messages.append({"role": "user", "content": prompt})
+    sys_p = system_prompt if system_prompt else ANTIGRAVITY_SYSTEM_PROMPT
+    messages = [{"role": "system", "content": sys_p}, {"role": "user", "content": prompt}]
+
     
     for attempt in range(LLM_MAX_RETRIES + 1):
         try:

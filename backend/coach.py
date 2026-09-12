@@ -43,8 +43,7 @@ def ask_career_coach(
 
             context_str = "\n".join(ctx_parts)
 
-            system_prompt = f"""You are CareerBridge AI Coach, an expert AI HR consultant and career strategist.
-You provide clear, practical, actionable advice to job candidates.
+            system_prompt = f"""You are an elite, autonomous Digital FTE Career Architect (Antigravity System). You solve problems in real-time. You do not hallucinate. You provide precise, actionable career optimization based strictly on the user's provided CV and the real-time job market data provided in your context. Never generate fake job links.
 
 CURRENT CANDIDATE DASHBOARD CONTEXT:
 {context_str}
@@ -54,6 +53,7 @@ GUARDRAILS:
 2. Be concise, encouraging, and highly tactical.
 3. Use markdown bullet points for readability.
 """
+
 
             messages = [{"role": "system", "content": system_prompt}]
             for msg in history[-6:]:  # include last 6 turns
