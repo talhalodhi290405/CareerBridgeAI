@@ -34,10 +34,10 @@ from backend.models import (
     CandidateProfile, JobPosting, MatchResult, ATSAnalysis,
     GapAnalysis, OptimizedProfile, OutreachPackage, JobSearchFilters,
     ApplicationRecord, ApplicationStatus, CoverLetter, CoachMessage,
-    SkillClassification,
+    SkillClassification, DocumentValidationResult,
 )
 from backend.config import is_demo_mode, get_api_key, logger
-from backend.parser import parse_resume, parse_resume_text, assess_extraction_quality
+from backend.parser import parse_resume, parse_resume_text, assess_extraction_quality, validate_pdf_resume, classify_document_type
 from backend.rag_engine import load_jobs, match_candidate_to_jobs
 from backend.ats_engine import analyze_ats, analyze_gaps
 from backend.optimizer import optimize_profile
@@ -50,162 +50,6 @@ from backend.demo import (
     get_demo_candidate, get_demo_ats_analysis, get_demo_gap_analysis,
     get_demo_optimized_profile, get_demo_outreach, get_demo_target_job_id,
 )
-
-# ---------------------------------------------------------------------------
-# Enterprise HR-Tech SaaS Design Tokens System
-# Palette: Primary Navy (#0B1F33), Brand Blue (#2563EB), Action (#0EA5E9)
-# Surfaces: Soft Grey (#F8FAFC), Surface White (#FFFFFF), Border (#E2E8F0)
-# ---------------------------------------------------------------------------
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-:root {
-    --primary-navy: #0B1F33;
-    --brand-blue: #2563EB;
-    --action-blue: #0EA5E9;
-    --bg-main: #F8FAFC;
-    --card-surface: #FFFFFF;
-    --border-color: #E2E8F0;
-    --text-primary: #0F172A;
-    --text-secondary: #64748B;
-    --success: #059669;
-    --warning: #D97706;
-    --danger: #DC2626;
-}
-
-.stApp {
-    background-color: var(--bg-main);
-    font-family: 'Inter', -apple-system, sans-serif;
-}
-
-/* Sidebar Enterprise Navigation Styling */
-[data-testid="stSidebar"] {
-    background-color: #0B1F33 !important;
-    border-right: 1px solid #1E293B;
-}
-[data-testid="stSidebar"] * {
-    color: #E2E8F0 !important;
-}
-
-/* Hide any native radio buttons in sidebar */
-[data-testid="stSidebar"] div[role="radiogroup"] {
-    display: none !important;
-}
-
-/* Sidebar Custom Clickable Navigation Item Styling */
-[data-testid="stSidebar"] button {
-    text-align: left !important;
-    justify-content: flex-start !important;
-    border: none !important;
-    border-radius: 0.5rem !important;
-    padding: 0.55rem 0.85rem !important;
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
-    color: #94A3B8 !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    margin-bottom: 0.15rem !important;
-    transition: all 0.15s ease-in-out !important;
-}
-
-[data-testid="stSidebar"] button:hover {
-    color: #FFFFFF !important;
-    background-color: #1E293B !important;
-}
-
-/* Active Nav Item Styling */
-[data-testid="stSidebar"] button[kind="primary"],
-[data-testid="stSidebar"] button[data-testid="baseButton-primary"] {
-    background-color: #2563EB !important;
-    color: #FFFFFF !important;
-    font-weight: 700 !important;
-    border-left: 4px solid #60A5FA !important;
-}
-
-.sidebar-brand {
-    font-size: 1.25rem; font-weight: 800; color: #FFFFFF !important;
-    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
-}
-.sidebar-sub {
-    font-size: 0.72rem; color: #64748B !important; margin-bottom: 0.85rem; font-weight: 500;
-}
-.sidebar-cat {
-    font-size: 0.68rem; font-weight: 700; color: #64748B !important;
-    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
-}
-
-/* Header Bar */
-header {visibility: hidden;}
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-.stDeployButton {display: none;}
-
-.top-bar-container {
-    background: #FFFFFF; border: 1px solid #E2E8F0;
-    padding: 1rem 1.5rem; display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 1.25rem;
-    border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-.greeting-title {
-    font-size: 1.35rem; font-weight: 800; color: #0F172A; margin: 0; line-height: 1.2;
-}
-.greeting-sub {
-    font-size: 0.85rem; color: #64748B; margin: 0; font-weight: 500;
-}
-.status-pill {
-    padding: 0.25rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 0.35rem;
-}
-.pill-live { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
-.pill-demo { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
-.pill-empty { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
-
-/* Dashboard Cards */
-.dash-card {
-    background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 0.75rem;
-    padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}
-.dash-card-hdr {
-    font-size: 1.05rem; font-weight: 700; color: #0F172A; margin-bottom: 0.25rem;
-    display: flex; align-items: center; justify-content: space-between;
-}
-.dash-card-sub { font-size: 0.82rem; color: #64748B; margin-bottom: 0.85rem; }
-
-/* Metric Cards */
-.metric-box {
-    background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 0.75rem;
-    padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01);
-}
-.metric-val {
-    font-size: 1.8rem; font-weight: 800; color: #2563EB; line-height: 1.1;
-}
-.metric-lbl {
-    font-size: 0.72rem; font-weight: 600; color: #64748B; text-transform: uppercase;
-    letter-spacing: 0.05em; margin-top: 0.25rem;
-}
-
-/* Badges */
-.source-badge-live {
-    background: #DCFCE7; color: #166534; font-size: 0.7rem; font-weight: 700;
-    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
-}
-.source-badge-demo {
-    background: #FEF3C7; color: #92400E; font-size: 0.7rem; font-weight: 700;
-    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
-}
-.warn-card {
-    background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem;
-    padding: 0.85rem; margin-bottom: 1rem; color: #92400E; font-size: 0.85rem;
-}
-
-/* Skill Tags */
-.tag-v { background: #ECFDF5; color: #047857; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }
-.tag-i { background: #FFFBEB; color: #B45309; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }
-.tag-m { background: #FEF2F2; color: #B91C1C; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }
-
-</style>
-""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Session State Initialization (Strict Clean Defaults)
@@ -232,6 +76,8 @@ _defaults = {
     "demo_mode_active": False,
     "show_manual_intake": False,
     "upload_toast_msg": None,
+    "upload_error_msg": None,
+    "theme_mode": "dark",
 }
 
 restored_storage = load_session_state()
@@ -245,6 +91,159 @@ for k, v in _defaults.items():
 
 def _persist_state():
     save_session_state(dict(st.session_state))
+
+cur_theme = st.session_state.get("theme_mode", "dark")
+is_dark_mode = (cur_theme == "dark")
+
+# Dynamic Theme Tokens
+theme_css = f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+:root {{
+    --bg-main: {'#090D16' if is_dark_mode else '#F8FAFC'};
+    --card-surface: {'#0F172A' if is_dark_mode else '#FFFFFF'};
+    --border-color: {'#1E293B' if is_dark_mode else '#E2E8F0'};
+    --text-primary: {'#F3F4F6' if is_dark_mode else '#0F172A'};
+    --text-secondary: {'#9CA3AF' if is_dark_mode else '#64748B'};
+    --brand-blue: {'#4F46E5' if is_dark_mode else '#2563EB'};
+}}
+
+.stApp {{
+    background-color: {'#090D16' if is_dark_mode else '#F8FAFC'} !important;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+}}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {{
+    background-color: {'#0B0F19' if is_dark_mode else '#F8FAFC'} !important;
+    border-right: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
+}}
+[data-testid="stSidebar"] * {{
+    color: {'#E2E8F0' if is_dark_mode else '#0F172A'} !important;
+}}
+
+/* Hide native radio buttons in sidebar */
+[data-testid="stSidebar"] div[role="radiogroup"] {{
+    display: none !important;
+}}
+
+/* Sidebar Custom Buttons */
+[data-testid="stSidebar"] button {{
+    text-align: left !important;
+    justify-content: flex-start !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    color: {'#94A3B8' if is_dark_mode else '#64748B'} !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 0.15rem !important;
+    transition: all 0.15s ease-in-out !important;
+}}
+
+[data-testid="stSidebar"] button:hover {{
+    color: #FFFFFF !important;
+    background-color: {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
+}}
+
+/* Active Nav Item Styling */
+[data-testid="stSidebar"] button[kind="primary"],
+[data-testid="stSidebar"] button[data-testid="baseButton-primary"] {{
+    background: {'linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)' if is_dark_mode else '#2563EB'} !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    border-left: 4px solid {'#818CF8' if is_dark_mode else '#60A5FA'} !important;
+}}
+
+.sidebar-brand {{
+    font-size: 1.25rem; font-weight: 800; color: {'#FFFFFF' if is_dark_mode else '#0F172A'} !important;
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
+}}
+.sidebar-sub {{
+    font-size: 0.72rem; color: #64748B !important; margin-bottom: 0.85rem; font-weight: 500;
+}}
+.sidebar-cat {{
+    font-size: 0.68rem; font-weight: 700; color: #64748B !important;
+    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
+}}
+
+/* Header Bar */
+header {{visibility: hidden;}}
+#MainMenu {{visibility: hidden;}}
+footer {{visibility: hidden;}}
+.stDeployButton {{display: none;}}
+
+.top-bar-container {{
+    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'};
+    padding: 1rem 1.5rem; display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 1.25rem;
+    border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}}
+.greeting-title {{
+    font-size: 1.35rem; font-weight: 800; color: {'#F3F4F6' if is_dark_mode else '#0F172A'}; margin: 0; line-height: 1.2;
+}}
+.greeting-sub {{
+    font-size: 0.85rem; color: {'#9CA3AF' if is_dark_mode else '#64748B'}; margin: 0; font-weight: 500;
+}}
+.status-pill {{
+    padding: 0.25rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 0.35rem;
+}}
+.pill-live {{ background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }}
+.pill-demo {{ background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }}
+.pill-empty {{ background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }}
+
+/* Dashboard Cards */
+.dash-card {{
+    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}}
+.dash-card-hdr {{
+    font-size: 1.05rem; font-weight: 700; color: {'#F3F4F6' if is_dark_mode else '#0F172A'}; margin-bottom: 0.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+}}
+.dash-card-sub {{ font-size: 0.82rem; color: {'#9CA3AF' if is_dark_mode else '#64748B'}; margin-bottom: 0.85rem; }}
+
+/* Metric Cards */
+.metric-box {{
+    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01);
+}}
+.metric-val {{
+    font-size: 1.8rem; font-weight: 800; color: {'#818CF8' if is_dark_mode else '#2563EB'}; line-height: 1.1;
+}}
+.metric-lbl {{
+    font-size: 0.72rem; font-weight: 600; color: {'#9CA3AF' if is_dark_mode else '#64748B'}; text-transform: uppercase;
+    letter-spacing: 0.05em; margin-top: 0.25rem;
+}}
+
+/* Badges */
+.source-badge-live {{
+    background: #DCFCE7; color: #166534; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
+}}
+.source-badge-demo {{
+    background: #FEF3C7; color: #92400E; font-size: 0.7rem; font-weight: 700;
+    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
+}}
+.warn-card {{
+    background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem;
+    padding: 0.85rem; margin-bottom: 1rem; color: #92400E; font-size: 0.85rem;
+}}
+
+/* Skill Tags */
+.tag-v {{ background: #ECFDF5; color: #047857; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+.tag-i {{ background: #FFFBEB; color: #B45309; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+.tag-m {{ background: #FEF2F2; color: #B91C1C; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+
+</style>
+"""
+st.markdown(theme_css, unsafe_allow_html=True)
+
 
 # Explicit Demo Profile Loader
 def _load_demo_profile():
@@ -291,26 +290,39 @@ def _clear_candidate_profile():
     st.session_state.outreach = None
     st.session_state.processed_resume_hash = None
     st.session_state.show_manual_intake = False
+    st.session_state.upload_error_msg = None
+    st.session_state.upload_toast_msg = None
     _persist_state()
 
 # Upload Processing Guard
 def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
-    """Safely process a PDF file upload using SHA-256 hash guard.
-    Triggers an immediate clean rerun on successful parsing."""
+    """Safely validate & process a PDF file upload using SHA-256 hash guard.
+    Runs the 7-stage validation pipeline BEFORE parsing."""
     if uploaded_file is None:
         return False
 
     file_bytes = uploaded_file.getvalue()
+    filename = getattr(uploaded_file, "name", "")
     file_hash = hashlib.sha256(file_bytes).hexdigest()
 
     if file_hash == st.session_state.get("processed_resume_hash"):
         return False  # Already processed frame!
 
-    logger.info(f"Resume upload detected — parsing started (hash: {file_hash[:8]}...)")
-    with st.spinner("Parsing your resume..."):
-        cand = parse_resume(file_bytes)
-
+    # Execute 7-stage validation pipeline FIRST
+    val_res: DocumentValidationResult = validate_pdf_resume(file_bytes, filename=filename)
     st.session_state.processed_resume_hash = file_hash
+
+    if not val_res.accepted:
+        logger.warning(f"Resume upload rejected — reason: {val_res.reason}, doc_type: {val_res.document_type}, size: {val_res.file_size_mb}MB (hash: {file_hash[:8]}...)")
+        st.session_state.upload_error_msg = val_res.user_message
+        st.session_state.upload_toast_msg = None
+        _persist_state()
+        st.rerun()
+        return False
+
+    # Validation PASSED — now parse candidate profile
+    logger.info(f"Resume validation passed (hash: {file_hash[:8]}...) — parsing CandidateProfile...")
+    cand = parse_resume(file_bytes)
 
     if cand and cand.raw_text:
         st.session_state.candidate = cand
@@ -320,6 +332,7 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         st.session_state.optimization = None
         st.session_state.outreach = None
         st.session_state.show_manual_intake = False
+        st.session_state.upload_error_msg = None
         st.session_state.upload_toast_msg = f"CV processed successfully: {cand.name or 'Candidate Profile'}"
         
         if any(a.source == "Demo Backup" for a in st.session_state.applications):
@@ -333,8 +346,10 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         st.rerun()
         return True
     else:
-        logger.warning(f"Resume parsing failed — unparseable PDF (hash: {file_hash[:8]}...)")
-        st.error("Could not extract text from this PDF. Please try a different file.")
+        st.session_state.upload_error_msg = "This PDF could not be read. Please upload a valid, non-corrupted resume PDF."
+        st.session_state.upload_toast_msg = None
+        _persist_state()
+        st.rerun()
         return False
 
 
@@ -368,6 +383,22 @@ nav_categories = [
 with st.sidebar:
     st.markdown('<div class="sidebar-brand">🚀 CareerBridge AI</div>', unsafe_allow_html=True)
     st.markdown('<div class="sidebar-sub">AI Career Intelligence Platform</div>', unsafe_allow_html=True)
+    
+    # Theme Toggle Buttons
+    t1, t2 = st.columns([1, 1])
+    with t1:
+        if st.button("🌙 Dark", key="t_btn_dark", type="primary" if is_dark_mode else "secondary", use_container_width=True):
+            if not is_dark_mode:
+                st.session_state.theme_mode = "dark"
+                _persist_state()
+                st.rerun()
+    with t2:
+        if st.button("☀️ Light", key="t_btn_light", type="primary" if not is_dark_mode else "secondary", use_container_width=True):
+            if is_dark_mode:
+                st.session_state.theme_mode = "light"
+                _persist_state()
+                st.rerun()
+
     st.markdown("---")
 
     for cat_name, items in nav_categories:
@@ -380,22 +411,13 @@ with st.sidebar:
                     _persist_state()
                     st.rerun()
 
-    st.markdown("---")
-    # Global System Status System (Sidebar Footer)
-    api_k = get_api_key()
-    st.markdown("**Enterprise System Status:**")
-    st.markdown(f"- AI Engine: `{'● Live (Groq)' if api_k else '● Fallback Engine'}`")
-    st.markdown(f"- Job APIs: `{'● Live Search Active' if 'LIVE' in st.session_state.job_status_msg else '● Ready for Search'}`")
-    c_cand = st.session_state.candidate
-    mode_text = '⚡ Demo Mode' if st.session_state.is_demo else ('🟢 Candidate Active' if (c_cand and c_cand.raw_text) else '⚪ No Profile Loaded')
-    st.markdown(f"- Profile Mode: `{mode_text}`")
-
 
 # ---------------------------------------------------------------------------
 # Top Header Bar & Greeting
 # ---------------------------------------------------------------------------
 c_profile: Optional[CandidateProfile] = st.session_state.candidate
 quality_info = assess_extraction_quality(c_profile)
+api_k = get_api_key()
 
 hour = datetime.now().hour
 time_greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 17 else "Good evening"
@@ -419,10 +441,23 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
-# Show Toast Confirmation if uploaded
+# Show Error Card if uploaded file was rejected
+if st.session_state.get("upload_error_msg"):
+    st.error(f"❌ {st.session_state['upload_error_msg']}")
+    col_err1, col_err2 = st.columns([3, 1])
+    with col_err1:
+        st.caption("You can enter your candidate profile manually or upload a different PDF resume.")
+    with col_err2:
+        if st.button("✍️ Enter Details Manually", key="err_manual_intake_btn", use_container_width=True):
+            st.session_state.show_manual_intake = True
+            st.session_state.upload_error_msg = None
+            st.rerun()
+
+# Show Toast Confirmation if uploaded file was accepted
 if st.session_state.get("upload_toast_msg"):
     st.success(f"✅ {st.session_state['upload_toast_msg']}")
     st.session_state["upload_toast_msg"] = None
+
 
 
 # ===========================================================================

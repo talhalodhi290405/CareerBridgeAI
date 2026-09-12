@@ -5,6 +5,20 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
+class DocumentValidationResult(BaseModel):
+    accepted: bool
+    document_type: str = "UNKNOWN"  # CV, COVER_LETTER, JOB_DESCRIPTION, GENERAL_DOCUMENT, UNKNOWN
+    reason: str = "OK"              # OK, EXCEEDS_MAX_SIZE, EMPTY_FILE, INVALID_FILE_FORMAT, INVALID_PDF_SIGNATURE, CORRUPTED_PDF, IMAGE_ONLY_OR_NO_TEXT, REJECTED_COVER_LETTER, REJECTED_JOB_DESCRIPTION, REJECTED_UNRELATED_DOC
+    user_message: str = ""
+    file_size_mb: float = 0.0
+    is_pdf: bool = False
+    is_parsable: bool = False
+    text_length: int = 0
+    confidence: float = 0.0
+    warnings: List[str] = Field(default_factory=list)
+
+
+
 class SkillClassification(str, Enum):
     VERIFIED = "verified"
     INFERRED = "inferred"
