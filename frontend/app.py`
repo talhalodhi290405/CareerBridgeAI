@@ -18,34 +18,32 @@ st.set_page_config(
 # --- LOVABLE/TAILWIND PREMIUM CSS ---
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-
+    /* Global Base Style */
     .stApp {
         background-color: #F8FAFC;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     /* Card-based containers */
     div[data-testid="stVerticalBlock"] > div:has(div.stMarkdown) {
         background-color: #FFFFFF;
         padding: 2rem;
-        border-radius: 1.25rem;
+        border-radius: 1rem;
         border: 1px solid #E2E8F0;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         margin-bottom: 1.5rem;
     }
 
-    /* Header Styling */
+    /* Customizing Header */
     .main-header {
-        font-size: 3rem;
+        font-size: 2.5rem;
         font-weight: 800;
         color: #0F172A;
         text-align: center;
         margin-bottom: 0.5rem;
-        letter-spacing: -0.025em;
     }
     .sub-header {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         color: #64748B;
         text-align: center;
         margin-bottom: 3rem;
@@ -57,7 +55,7 @@ st.markdown("""
         color: white !important;
         border-radius: 0.75rem !important;
         border: none !important;
-        padding: 0.7rem 1.5rem !important;
+        padding: 0.6rem 1.2rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease-in-out !important;
         box-shadow: 0 4px 6px -1px rgba(4, 84, 217, 0.2) !important;
@@ -70,7 +68,7 @@ st.markdown("""
 
     /* ATS Score Styling */
     [data-testid="stMetricValue"] {
-        font-size: 3.5rem !important;
+        font-size: 3rem !important;
         color: #0454D9 !important;
         font-weight: 800 !important;
     }
@@ -80,7 +78,6 @@ st.markdown("""
         border-radius: 1rem !important;
         border: 1px solid #CBD5E1 !important;
         background-color: #FDFDFD !important;
-        font-family: 'Inter', sans-serif !important;
     }
 
     /* Hide Streamlit defaults */
@@ -106,7 +103,7 @@ backend_url = os.environ.get('BACKEND_URL', 'http://localhost:8000')
 
 # --- HEADER ---
 st.markdown('<div class="main-header">🚀 CareerBridge AI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Autonomous Talent Triage & Profile Optimization System</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Autonomous AI-Powered Placement Triage & Profile Optimization</div>', unsafe_allow_html=True)
 
 # --- MAIN DUAL-PANE LAYOUT ---
 main_col, side_col = st.columns([3, 1], gap="large")
@@ -118,12 +115,12 @@ with main_col:
     # PHASE 1: ASSET UPLOAD & INTENT
     if st.session_state.workflow_step == 'START':
         with st.container():
-            st.markdown("#### 🎯 Candidate Profiling")
+            st.markdown("#### 🎯 Get Started")
             c1, c2 = st.columns([1, 2])
             with c1:
                 st.markdown("**1. Upload Assets**")
-                input_mode = st.radio("Input Method", ["Upload PDF CV", "Text Profile"], horizontal=True)
-                if input_mode == "Upload PDF CV":
+                input_mode = st.radio("Method", ["Upload PDF", "Text Profile"], horizontal=True)
+                if input_mode == "Upload PDF":
                     uploaded_file = st.file_uploader("PDF Resume", type=["pdf"])
                     if uploaded_file:
                         with pdfplumber.open(uploaded_file) as pdf:
@@ -131,9 +128,8 @@ with main_col:
                         temp_path = f"temp_{uploaded_file.name}"
                         with open(temp_path, "wb") as f: f.write(uploaded_file.getvalue())
                         st.session_state.temp_file_path = temp_path
-                        st.success("Resume parsed ✅")
                 else:
-                    st.session_state.resume_text = st.text_area("Profile Details", placeholder="Describe your experience...", height=150)
+                    st.session_state.resume_text = st.text_area("Experience", placeholder="Paste your resume text here...", height=150)
 
             with c2:
                 st.markdown("**2. Target Preferences**")
@@ -142,11 +138,11 @@ with main_col:
                 with p_col2: location = st.selectbox("Location", ["Remote", "Onsite", "Global", "Hybrid"])
                 with p_col3: job_type = st.selectbox("Type", ["Full-time", "Internship", "Contract"])
 
-                if st.button("🔍 Find Best Matches", type="primary", use_container_width=True):
+                if st.button("🔍 Find Matching Jobs", type="primary", use_container_width=True):
                     if not st.session_state.resume_text or not role:
-                        st.error("Please provide both a CV/Text and a desired role.")
+                        st.error("Please provide both a CV and a target role.")
                     else:
-                        with st.spinner("Matching with ChromaDB..."):
+                        with st.spinner("Analyzing matches..."):
                             resp = requests.post(f"{backend_url}/api/match_jobs",
                                                json={"resume_text": st.session_state.resume_text, "role": role, "location": location, "job_type": job_type})
                             if resp.status_code == 200:
@@ -154,9 +150,9 @@ with main_col:
                                 st.session_state.workflow_step = 'MATCHED'
                                 st.rerun()
 
-    # PHASE 2: JOB SELECTION
+    # PHASE 2: JOB SELECTION & ANALYSIS
     elif st.session_state.workflow_step == 'MATCHED':
-        st.markdown("#### 💼 Top Matching Opportunities")
+        st.markdown("#### 💼 Selected Matches")
         for match in st.session_state.matches:
             meta = match['metadata']
             with st.container(border=True):
@@ -174,11 +170,11 @@ with main_col:
             st.session_state.workflow_step = 'START'
             st.rerun()
 
-    # PHASE 3: OBSERVABILITY & ANALYSIS
+    # PHASE 3: OBSERVABILITY & ATS ANALYSIS
     elif st.session_state.workflow_step == 'ANALYZING':
         job = st.session_state.selected_job
-        st.subheader(f"🤖 Digital FTE Analysis: {job['metadata']['title']}")
-        with st.status("Executing Autonomous Pipeline...", expanded=True) as status:
+        st.subheader(f"🤖 Processing: {job['metadata']['title']}")
+        with st.status("Digital FTE is running the pipeline...", expanded=True) as status:
             st.write("🔍 Extracting technical entities...")
             time.sleep(0.4)
             st.write("🧬 Querying Vector DB for requirements...")
@@ -192,17 +188,17 @@ with main_col:
                 st.session_state.analysis_results = resp.json()
                 st.session_state.thread_id = resp.json().get("thread_id")
                 st.session_state.workflow_step = 'VALIDATING'
-                status.update(label="Analysis Complete", state="complete")
+                status.update(label="Pipeline Complete", state="complete")
                 st.rerun()
             else:
                 st.error("Pipeline error.")
                 status.update(label="Failed", state="error")
 
-    # PHASE 4: THE laVABLE-INSPIRED WORKBENCH TABS
+    # PHASE 4: THE CORE FEATURE TABS (SaaS Design)
     elif st.session_state.workflow_step in ['VALIDATING', 'EDITING']:
         st.markdown("#### 🛠️ Professional Optimization Workbench")
 
-        # THE 4 EXPLICIT PRD TABS
+        # THE 4 EXPLICIT FEATURE TABS
         tab_matches, tab_cv, tab_outreach, tab_prep = st.tabs([
             "💼 Job Matches", "📄 CV Builder", "✉️ Cover Letter & Emails", "🎯 Interview Prep"
         ])
@@ -228,7 +224,7 @@ with main_col:
             if st.session_state.workflow_step == 'VALIDATING':
                 st.divider()
                 if st.button("✅ Approve & Generate Outreach", type="primary", use_container_width=True):
-                    with st.spinner("Agent is drafting deliverables..."):
+                    with st.spinner("AI is drafting deliverables..."):
                         app_resp = requests.post(f"{backend_url}/api/approve", json={"thread_id": st.session_state.thread_id})
                         if app_resp.status_code == 200:
                             outreach = app_resp.json().get("outreach_results", {})
@@ -243,7 +239,7 @@ with main_col:
                 opt = st.session_state.analysis_results.get("optimizer_results", {})
                 for b in opt.get("suggested_bullet_points", []):
                     st.write(f"✨ {b}")
-                st.info("Approval required in 'Job Matches' tab to unlock the editor.")
+                st.info("Approve the analysis in the 'Job Matches' tab to unlock the final editor.")
             elif st.session_state.workflow_step == 'EDITING':
                 st.subheader("CV Final Polish")
                 st.text_area("Refine your bullet points:", value=st.session_state.final_deliverable, height=400, key="cv_edit")
@@ -272,7 +268,7 @@ with main_col:
             else:
                 st.info("Approval required to generate interview questions.")
 
-    # FINAL SUBMIT
+    # FINAL SUBMIT (Visible only in Editing phase)
     if st.session_state.workflow_step == 'EDITING':
         st.markdown("---")
         if st.button("🚀 Finalize & Submit Application", type="primary", use_container_width=True):
@@ -283,7 +279,7 @@ with main_col:
                 "deliverable": st.session_state.final_deliverable,
                 "status": "Applied"
             })
-            st.toast("Submitted successfully! 🎉")
+            st.toast("Application Submitted! 🎉")
             st.session_state.workflow_step = 'START'
             st.session_state.selected_job = None
             st.rerun()
