@@ -271,25 +271,6 @@ div[data-testid="stAlert"] {{
     background-color: {'#334155' if is_dark_mode else '#F1F5F9'};
     color: {'#FFFFFF' if is_dark_mode else '#2563EB'};
 }}
-
-{'''
-.stTextInput label, .stSelectbox label, .stNumberInput label, p, span, h1, h2, h3 {
-    color: #FFFFFF !important;
-}
-div[data-testid="stExpander"] summary * {
-    color: #FFFFFF !important;
-}
-''' if is_dark_mode else ''}
-
-@media (prefers-color-scheme: dark) {{
-    .stTextInput label, .stSelectbox label, .stNumberInput label, p, span, h1, h2, h3 {{
-        color: #FFFFFF !important;
-    }}
-    /* Ensure the expander headers are also bright white */
-    div[data-testid="stExpander"] summary * {{
-        color: #FFFFFF !important;
-    }}
-}}
 </style>
 """
 st.markdown(theme_css, unsafe_allow_html=True)
