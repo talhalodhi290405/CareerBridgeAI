@@ -35,7 +35,7 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* Header Styling */
+    /* Customizing Header */
     .main-header {
         font-size: 3rem;
         font-weight: 800;
@@ -45,7 +45,7 @@ st.markdown("""
         letter-spacing: -0.025em;
     }
     .sub-header {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
         color: #64748B;
         text-align: center;
         margin-bottom: 3rem;
@@ -57,7 +57,7 @@ st.markdown("""
         color: white !important;
         border-radius: 0.75rem !important;
         border: none !important;
-        padding: 0.7rem 1.5rem !important;
+        padding: 0.6rem 1.2rem !important;
         font-weight: 600 !important;
         transition: all 0.2s ease-in-out !important;
         box-shadow: 0 4px 6px -1px rgba(4, 84, 217, 0.2) !important;
@@ -106,7 +106,7 @@ backend_url = os.environ.get('BACKEND_URL', 'http://localhost:8000')
 
 # --- HEADER ---
 st.markdown('<div class="main-header">🚀 CareerBridge AI</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Autonomous Talent Triage & Profile Optimization System</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Autonomous AI-Powered Placement Triage & Profile Optimization</div>', unsafe_allow_html=True)
 
 # --- MAIN DUAL-PANE LAYOUT ---
 main_col, side_col = st.columns([3, 1], gap="large")
@@ -127,13 +127,13 @@ with main_col:
                     uploaded_file = st.file_uploader("PDF Resume", type=["pdf"])
                     if uploaded_file:
                         with pdfplumber.open(uploaded_file) as pdf:
-                            st.session_state.resume_text = "".join([p.extract_text() or "" for p in pdf.pages])
+                            st.session_state.resume_text = "".join([page.extract_text() or "" for page in pdf.pages])
                         temp_path = f"temp_{uploaded_file.name}"
                         with open(temp_path, "wb") as f: f.write(uploaded_file.getvalue())
                         st.session_state.temp_file_path = temp_path
                         st.success("Resume parsed ✅")
                 else:
-                    st.session_state.resume_text = st.text_area("Profile Details", placeholder="Describe your experience...", height=150)
+                    st.session_state.resume_text = st.text_area("Experience", placeholder="Describe your experience...", height=150)
 
             with c2:
                 st.markdown("**2. Target Preferences**")
@@ -146,7 +146,7 @@ with main_col:
                     if not st.session_state.resume_text or not role:
                         st.error("Please provide both a CV/Text and a desired role.")
                     else:
-                        with st.spinner("Matching with ChromaDB..."):
+                        with st.spinner("Searching..."):
                             resp = requests.post(f"{backend_url}/api/match_jobs",
                                                json={"resume_text": st.session_state.resume_text, "role": role, "location": location, "job_type": job_type})
                             if resp.status_code == 200:
@@ -202,7 +202,6 @@ with main_col:
     elif st.session_state.workflow_step in ['VALIDATING', 'EDITING']:
         st.markdown("#### 🛠️ Professional Optimization Workbench")
 
-        # THE 4 EXPLICIT PRD TABS
         tab_matches, tab_cv, tab_outreach, tab_prep = st.tabs([
             "💼 Job Matches", "📄 CV Builder", "✉️ Cover Letter & Emails", "🎯 Interview Prep"
         ])
