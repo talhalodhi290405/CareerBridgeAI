@@ -113,18 +113,12 @@ theme_css = f"""
 .stApp {{
     background-color: {'#090D16' if is_dark_mode else '#F8FAFC'} !important;
     font-family: 'Inter', -apple-system, sans-serif;
-    color: {'#F3F4F6' if is_dark_mode else '#1E293B'} !important;
 }}
 
-
-
-/* Sidebar Styling */
+/* Sidebar Base Styling */
 [data-testid="stSidebar"] {{
     background-color: {'#0B0F19' if is_dark_mode else '#F8FAFC'} !important;
     border-right: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
-}}
-[data-testid="stSidebar"] * {{
-    color: {'#E2E8F0' if is_dark_mode else '#0F172A'} !important;
 }}
 
 /* Hide native radio buttons in sidebar */
@@ -163,18 +157,18 @@ theme_css = f"""
 }}
 
 .sidebar-brand {{
-    font-size: 1.25rem; font-weight: 800; color: {'#FFFFFF' if is_dark_mode else '#0F172A'} !important;
+    font-size: 1.25rem; font-weight: 800; color: {'#FFFFFF' if is_dark_mode else '#0F172A'};
     display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
 }}
 .sidebar-sub {{
-    font-size: 0.72rem; color: #64748B !important; margin-bottom: 0.85rem; font-weight: 500;
+    font-size: 0.72rem; color: #64748B; margin-bottom: 0.85rem; font-weight: 500;
 }}
 .sidebar-cat {{
-    font-size: 0.68rem; font-weight: 700; color: #64748B !important;
+    font-size: 0.68rem; font-weight: 700; color: #64748B;
     text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
 }}
 
-/* Header Bar */
+/* Header Bar & Global Clean Overrides */
 header {{visibility: hidden;}}
 #MainMenu {{visibility: hidden;}}
 footer {{visibility: hidden;}}
@@ -200,10 +194,11 @@ footer {{visibility: hidden;}}
 .pill-demo {{ background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }}
 .pill-empty {{ background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }}
 
-/* Dashboard Cards */
+/* Dashboard Cards & Containers */
 .dash-card {{
     background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
     padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'};
 }}
 .dash-card-hdr {{
     font-size: 1.05rem; font-weight: 700; color: {'#F3F4F6' if is_dark_mode else '#0F172A'}; margin-bottom: 0.25rem;
@@ -243,63 +238,34 @@ footer {{visibility: hidden;}}
 .tag-i {{ background: #FFFBEB; color: #B45309; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
 .tag-m {{ background: #FEF2F2; color: #B91C1C; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
 
-/* Fix Streamlit Info / Alert Box Contrast */
+/* Alert Box Styling */
 div[data-testid="stAlert"] {{
     background-color: {'#1E293B' if is_dark_mode else '#EFF6FF'} !important;
     border: 1px solid {'#3B82F6' if is_dark_mode else '#BFDBFE'} !important;
     border-radius: 0.5rem !important;
 }}
-div[data-testid="stAlert"] * {{
-    color: {'#FFFFFF' if is_dark_mode else '#1E40AF'} !important;
-}}
 
-/* Fix File Uploader Box & Dropzone Contrast */
+/* File Uploader Dropzone Styling */
 [data-testid="stFileUploaderDropzone"] {{
     background-color: {'#1E293B' if is_dark_mode else '#F8FAFC'} !important;
     border: 1px dashed {'#475569' if is_dark_mode else '#CBD5E1'} !important;
     border-radius: 0.5rem !important;
 }}
-[data-testid="stFileUploaderDropzone"] * {{
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
-}}
-[data-testid="stFileUploader"] button {{
-    background-color: {'#334155' if is_dark_mode else '#E2E8F0'} !important;
-    color: {'#FFFFFF' if is_dark_mode else '#0F172A'} !important;
-    border-radius: 0.375rem !important;
-}}
 
-/* Fix Input & Form Controls Contrast */
-input, textarea, select {{
-    background-color: {'#1E293B' if is_dark_mode else '#FFFFFF'} !important;
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
-    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'} !important;
-}}
-
-/* Fix Main Page Buttons & Cards Contrast (Dark Mode vs Light Mode) */
+/* Main Page Secondary Buttons */
 .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"],
 .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) {{
-    background-color: {'#1E293B' if is_dark_mode else '#FFFFFF'} !important;
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
-    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'} !important;
-    font-weight: 600 !important;
-}}
-
-.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"] *,
-.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) * {{
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+    background-color: {'#1E293B' if is_dark_mode else '#FFFFFF'};
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'};
+    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'};
+    font-weight: 600;
 }}
 
 .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover,
 .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
-    background-color: {'#334155' if is_dark_mode else '#F1F5F9'} !important;
-    color: {'#FFFFFF' if is_dark_mode else '#2563EB'} !important;
+    background-color: {'#334155' if is_dark_mode else '#F1F5F9'};
+    color: {'#FFFFFF' if is_dark_mode else '#2563EB'};
 }}
-
-/* Ensure text in containers and white boxes is 100% visible in Light Mode */
-.dash-card, .metric-box, div[data-testid="stForm"] {{
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
-}}
-
 </style>
 """
 st.markdown(theme_css, unsafe_allow_html=True)
@@ -358,6 +324,42 @@ def _clear_candidate_profile():
     st.session_state.job_results = []
     _persist_state()
     st.rerun()
+
+
+# Infer Candidate Primary Role Helper for Auto-Pilot
+def infer_candidate_primary_role(cand: Optional[CandidateProfile]) -> str:
+    """Infer target primary role from candidate's profile, skills, or experience."""
+    if not cand:
+        return "Software Engineer"
+    
+    if cand.desired_role and cand.desired_role.strip():
+        return cand.desired_role.strip()
+        
+    # Check experience titles for common role patterns
+    if cand.experience:
+        for exp in cand.experience:
+            if isinstance(exp, str):
+                lower_exp = exp.lower()
+                if any(kw in lower_exp for kw in ["engineer", "developer", "architect", "manager", "analyst", "scientist", "specialist"]):
+                    title_part = exp.split(" at ")[0].split(" - ")[0].split(" | ")[0].strip()
+                    if title_part and len(title_part) < 50:
+                        return title_part
+
+    # Infer from skills
+    if cand.skills:
+        skills_upper = [s.upper() for s in cand.skills]
+        if any(k in skills_upper for k in ["PYTORCH", "TENSORFLOW", "MACHINE LEARNING", "DEEP LEARNING", "AI", "LLM", "NLP", "SCIKIT-LEARN"]):
+            return "Machine Learning Engineer"
+        if any(k in skills_upper for k in ["REACT", "VUE", "TYPESCRIPT", "JAVASCRIPT", "HTML", "CSS", "FRONTEND", "TAILWIND"]):
+            return "Frontend Engineer"
+        if any(k in skills_upper for k in ["KUBERNETES", "DOCKER", "AWS", "TERRAFORM", "DEVOPS", "CI/CD", "AZURE", "GCP"]):
+            return "DevOps Engineer"
+        if any(k in skills_upper for k in ["PYTHON", "JAVA", "GO", "FASTAPI", "DJANGO", "SPRING", "NODE", "BACKEND"]):
+            return "Software Engineer"
+        if any(k in skills_upper for k in ["SQL", "PANDAS", "PYTHON", "POWER BI", "TABLEAU", "DATA ANALYSIS"]):
+            return "Data Scientist"
+
+    return "Software Engineer"
 
 
 # Upload Processing Guard
@@ -860,6 +862,59 @@ with main_canvas:
     # ===========================================================================
     elif st.session_state.nav_section == "Find Jobs":
         st.markdown("### 🔍 Search the Live Job Market")
+
+        # -------------------------------------------------------------------
+        # 🚀 AUTONOMOUS DIGITAL FTE AUTO-PILOT (X-FACTOR FEATURE)
+        # -------------------------------------------------------------------
+        with st.container():
+            ap_col1, ap_col2 = st.columns([3, 1])
+            with ap_col1:
+                st.markdown("""
+                <div style="background: linear-gradient(135deg, #1E1B4B 0%, #312E81 50%, #4338CA 100%); padding: 1rem 1.2rem; border-radius: 0.75rem; color: white; border: 1px solid #6366F1; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-bottom: 0.85rem;">
+                    <div style="font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                        🚀 Autonomous Digital FTE Auto-Pilot
+                        <span style="background:#10B981; color:white; font-size:0.68rem; font-weight:700; padding:0.15rem 0.5rem; border-radius:1rem; text-transform:uppercase;">Agentic Mode</span>
+                    </div>
+                    <div style="font-size: 0.82rem; color: #E0E7FF; margin-top: 0.25rem;">
+                        Automatically parse candidate profile, infer target primary role, and instantly scour live global job markets in one click.
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            with ap_col2:
+                st.markdown('<div style="height: 0.2rem;"></div>', unsafe_allow_html=True)
+                if st.button("🚀 Run Autonomous Digital FTE Auto-Pilot", type="primary", use_container_width=True, key="run_autopilot_btn"):
+                    if not c_profile or not c_profile.raw_text:
+                        st.warning("⚠️ No candidate profile loaded! Please upload a CV or select the Demo Profile first.")
+                    else:
+                        with st.status("Digital FTE: Analyzing profile and scouring global job markets...", expanded=True) as status_box:
+                            status_box.write("🧠 **Step 1/3:** Parsing candidate skills, experience, and domain background...")
+                            inferred_role = infer_candidate_primary_role(c_profile)
+                            st.session_state.search_filters.desired_role = inferred_role
+                            
+                            status_box.write(f"🎯 **Step 2/3:** Inferred Target Primary Role: **{inferred_role}** (based on {len(c_profile.skills)} verified skills & career trajectory).")
+                            
+                            status_box.write("🌐 **Step 3/3:** Scouring live global job markets via Adzuna, Remotive, Jobicy, and Arbeitnow APIs...")
+                            try:
+                                jobs, msg = search_live_jobs(st.session_state.search_filters)
+                                st.session_state.job_results = jobs
+                                st.session_state.job_status_msg = f"⚡ Autonomous Auto-Pilot: {msg}"
+                                status_box.update(
+                                    label=f"✅ Digital FTE Auto-Pilot Complete: Discovered {len(jobs)} live matches for '{inferred_role}'!",
+                                    state="complete",
+                                    expanded=False
+                                )
+                                _persist_state()
+                            except Exception as e:
+                                logger.error(f"Auto-Pilot search error: {e}")
+                                status_box.update(
+                                    label="❌ Auto-Pilot encountered an error querying live APIs.",
+                                    state="error",
+                                    expanded=False
+                                )
+                                st.error(f"Auto-pilot error: {e}")
+                        st.rerun()
+
+        st.markdown("---")
 
         # Search Bar & Optional Filters
         st.markdown("#### What role are you looking for?")
