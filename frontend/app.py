@@ -3,14 +3,33 @@ import requests
 import os
 from dotenv import load_dotenv
 import pdfplumber
+import time
 
 load_dotenv()
 
-st.set_page_config(page_title="CareerBridge AI", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="CareerBridge AI | Digital FTE", page_icon="🤖", layout="wide")
 
-# Initialize session state
+# --- CUSTOM THEMING & CSS ---
+st.markdown("""
+    <style>
+    .main { background-color: #F8FAFC; }
+    .stButton>button { border-radius: 8px; font-weight: 600; }
+    .stTextArea textarea { border-radius: 12px; }
+    .agent-log {
+        background-color: #0F172A;
+        color: #10B981;
+        font-family: 'Courier New', Courier, monospace;
+        padding: 15px;
+        border-radius: 10px;
+        height: 300px;
+        overflow-y: auto;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- SESSION STATE ---
 if 'step' not in st.session_state:
-    st.session_state.step = 'PREFERENCES'
+    st.session_state.step = 'IDLE'
 if 'resume_text' not in st.session_state:
     st.session_state.resume_text = ""
 if 'selected_job' not in st.session_state:
@@ -21,192 +40,215 @@ if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
 if 'outreach_results' not in st.session_state:
     st.session_state.outreach_results = None
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
 if 'applications' not in st.session_state:
     st.session_state.applications = []
+if 'final_deliverable' not in st.session_state:
+    st.session_state.final_deliverable = ""
 
 backend_url = os.environ.get('BACKEND_URL', 'http://localhost:8000')
 
 # --- SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.title("🚀 CareerBridge AI")
+    st.title("🤖 Digital FTE")
+    st.markdown("#### CareerBridge Autonomous Worker")
     st.markdown("---")
     view = st.radio(
         "Navigation",
-        ["Dashboard & Analysis", "AI Career Chatbot", "Application Tracker"],
+        ["Delegation Desk", "Agentic Observability", "HITL Workbench"],
         index=0
     )
     st.markdown("---")
-    st.caption("Powered by Groq & LangGraph")
+    st.caption("Status: 🟢 Active & Listening")
 
-# --- VIEW 1: DASHBOARD & ANALYSIS ---
-if view == "Dashboard & Analysis":
-    st.header("📊 Dashboard & Analysis")
+# --- VIEW 1: DELEGATION DESK ---
+if view == "Delegation Desk":
+    st.header("📥 Delegation Desk")
+    st.markdown("Provide your intent. The Digital FTE will handle the research, matching, and drafting.")
 
-    if st.session_state.step == 'PREFERENCES':
-        st.subheader("🎯 Step 1: Define Your Search")
-        col1, col2 = st.columns(2)
-        with col1:
-            role = st.text_input("Desired Role", placeholder="e.g. Senior Python Engineer")
-            location = st.selectbox("Location Preference", ["Remote", "Onsite", "Global", "Hybrid"])
-        with col2:
-            job_type = st.selectbox("Job Type", ["Full-time", "Internship", "Contract"])
-            uploaded_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.subheader("Assets")
+        uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"])
+        if uploaded_file:
+            st.success("CV Loaded ✅")
 
-        if st.button("🔍 Find Matching Jobs", type="primary"):
-            if not uploaded_file or not role:
-                st.error("Please provide both a role and a resume.")
+    with col2:
+        st.subheader("Intent")
+        intent = st.chat_input("e.g. 'Find me remote Python internships in Europe and tailor my CV for them'")
+
+        if intent:
+            if not uploaded_file:
+                st.error("Please upload your CV first.")
             else:
-                with st.spinner("Analyzing resume and searching for jobs..."):
-                    try:
-                        with pdfplumber.open(uploaded_file) as pdf:
-                            text = "".join([page.extract_text() or "" for page in pdf.pages])
-                        st.session_state.resume_text = text
+                with st.spinner("Parsing intent and searching..."):
+                    # Extract text
+                    with pdfplumber.open(uploaded_file) as pdf:
+                        text = "".join([page.extract_text() or "" for page in pdf.pages])
+                    st.session_state.resume_text = text
 
-                        temp_path = f"temp_{uploaded_file.name}"
-                        with open(temp_path, "wb") as f:
-                            f.write(uploaded_file.getvalue())
-                        st.session_state.temp_file_path = temp_path
+                    temp_path = f"temp_{uploaded_file.name}"
+                    with open(temp_path, "wb") as f:
+                        f.write(uploaded_file.getvalue())
+                    st.session_state.temp_file_path = temp_path
 
-                        resp = requests.post(
-                            f"{backend_url}/api/match_jobs",
-                            json={
-                                "resume_text": text,
-                                "role": role,
-                                "location": location,
-                                "job_type": job_type
-                            }
-                        )
-                        if resp.status_code == 200:
-                            st.session_state.matches = resp.json().get("matches", [])
-                            st.session_state.step = 'SELECTING_JOB'
-                            st.rerun()
-                        else:
-                            st.error("Matching failed.")
-                    except Exception as e:
-                        st.error(f"Error: {e}")
+                    # Call backend match_jobs with raw prompt
+                    resp = requests.post(
+                        f"{backend_url}/api/match_jobs",
+                        json={"prompt": intent, "resume_text": text}
+                    )
+                    if resp.status_code == 200:
+                        st.session_state.matches = resp.json().get("matches", [])
+                        st.session_state.step = 'MATCHING'
+                        st.toast("Jobs matched! Head over to Observability to start the process.", icon="🚀")
+                    else:
+                        st.error("Matching failed.")
 
-    elif st.session_state.step == 'SELECTING_JOB':
-        st.subheader("💼 Step 2: Select the Best Match")
+    if 'matches' in st.session_state:
+        st.markdown("---")
+        st.subheader("🎯 Suggested Roles")
         for match in st.session_state.matches:
             meta = match['metadata']
-            with st.expander(f"{meta['title']} at {meta['company']} ({meta['location']})"):
-                st.write(f"**Type:** {meta['type']}")
-                st.write(f"**Description:** {match['document']}")
-                if st.button(f"Select this Job", key=match['id']):
+            with st.expander(f"**{meta['title']}** at {meta['company']}"):
+                st.write(f"**Location:** {meta['location']} | **Type:** {meta['type']}")
+                st.write(match['document'])
+                if st.button(f"Delegate Analysis for this Role", key=match['id']):
                     st.session_state.selected_job = match
                     st.session_state.step = 'ANALYZING'
-                    st.rerun()
-        if st.button("← Back to Preferences"):
-            st.session_state.step = 'PREFERENCES'
-            st.rerun()
+                    st.toast("Analysis delegated to Digital FTE ✅", icon="🤖")
 
-    elif st.session_state.step == 'ANALYZING':
+# --- VIEW 2: AGENTIC OBSERVABILITY ---
+elif view == "Agentic Observability":
+    st.header("🔭 Agentic Observability")
+
+    if st.session_state.step != 'ANALYZING':
+        st.info("No active tasks. Head to the Delegation Desk to delegate a role.")
+    else:
         job = st.session_state.selected_job
-        st.subheader(f"🧠 Step 3: AI Analysis for {job['metadata']['title']}")
-        if st.button("🚀 Run AI Analysis", type="primary"):
-            with st.spinner("Executing LangGraph Pipeline..."):
-                resp = requests.post(
-                    f"{backend_url}/api/analyze_full",
-                    json={"file_path": st.session_state.temp_file_path, "job_id": job['id']}
+        st.subheader(f"Worker Process: {job['metadata']['title']}")
+
+        # Real-time "Agent Thoughts" simulation
+        with st.status("Digital FTE is processing...", expanded=True) as status:
+            st.write("🤖 Agent: Initializing context...")
+            time.sleep(0.5)
+            st.write("🤖 Agent: Extracting technical entities from CV...")
+            time.sleep(0.8)
+            st.write("🤖 Agent: Querying Vector DB for role requirements...")
+            time.sleep(0.6)
+
+            # Actual API Call
+            resp = requests.post(
+                f"{backend_url}/api/analyze_full",
+                json={"file_path": st.session_state.temp_file_path, "job_id": job['id']}
+            )
+
+            if resp.status_code == 200:
+                st.write("🤖 Agent: Calculating ATS Match Score...")
+                time.sleep(0.5)
+                st.write("🤖 Agent: Drafting personalized optimization advice...")
+                time.sleep(0.7)
+                st.session_state.analysis_results = resp.json()
+                st.session_state.thread_id = resp.json().get("thread_id")
+                st.session_state.step = 'VALIDATING'
+                status.update(label="Task Complete: Pending Human Review", state="complete", expanded=False)
+                st.success("The Digital FTE has finished the analysis. Please review it in the HITL Workbench.")
+            else:
+                st.error("Agent encountered a system error during processing.")
+                status.update(label="Process Failed", state="error")
+
+# --- VIEW 3: HITL WORKBENCH ---
+elif view == "HITL Workbench":
+    st.header("🛠️ HITL Workbench")
+
+    if st.session_state.step != 'VALIDATING' and st.session_state.step != 'OUTREACH':
+        st.info("No deliverables ready for review. Please complete the Analysis phase first.")
+    else:
+        # 1. The ATS/Optimizer Review (if not yet approved)
+        if st.session_state.step == 'VALIDATING':
+            res = st.session_state.analysis_results
+            ats, opt = res.get("ats_results", {}), res.get("optimizer_results", {})
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                st.metric("ATS Score", f"{ats.get('ats_score', 'N/A')}%", delta=ats.get("recommendation", ""))
+                st.write(f"**Summary:** {ats.get('brief_summary', 'N/A')}")
+                with st.expander("Matched Skills"):
+                    for s in ats.get("matched_skills", []): st.write(f"- {s}")
+            with col2:
+                st.subheader("AI Coach Advice")
+                st.write(opt.get("actionable_feedback", "N/A"))
+
+            st.divider()
+            if st.button("✅ Approve & Generate Deliverables", type="primary", use_container_width=True):
+                with st.spinner("Digital FTE is drafting final documents..."):
+                    app_resp = requests.post(f"{backend_url}/api/approve", json={"thread_id": st.session_state.thread_id})
+                    if app_resp.status_code == 200:
+                        outreach = app_resp.json().get("outreach_results", {})
+                        st.session_state.outreach_results = outreach
+                        # Initial deliverable text
+                        st.session_state.final_deliverable = f"COVER LETTER:\n{outreach.get('cover_letter')}\n\nEMAIL:\n{outreach.get('recruiter_email')}"
+                        st.session_state.step = 'OUTREACH'
+                        st.rerun()
+
+        # 2. The Co-Pilot Editor (Split Screen)
+        if st.session_state.step == 'OUTREACH':
+            st.subheader("✍️ Co-Pilot Editor")
+
+            col_chat, col_editor = st.columns([1, 2])
+
+            with col_chat:
+                st.markdown("**AI Editor**")
+                if "edit_messages" not in st.session_state: st.session_state.edit_messages = []
+
+                for m in st.session_state.edit_messages:
+                    with st.chat_message(m["role"]): st.markdown(m["content"])
+
+                if edit_prompt := st.chat_input("e.g. 'Make the cover letter more aggressive'"):
+                    st.session_state.edit_messages.append({"role": "user", "content": edit_prompt})
+                    with st.chat_message("user"): st.markdown(edit_prompt)
+
+                    with st.chat_message("assistant"):
+                        with st.spinner("Editing..."):
+                            edit_resp = requests.post(
+                                f"{backend_url}/api/edit_text",
+                                json={"text": st.session_state.final_deliverable, "instruction": edit_prompt}
+                            )
+                            if edit_resp.status_code == 200:
+                                new_text = edit_resp.json().get("edited_text", "")
+                                st.session_state.final_deliverable = new_text
+                                st.markdown("Text updated! Check the editor on the right.")
+                                st.session_state.edit_messages.append({"role": "assistant", "content": "I've updated the documents based on your request."})
+                            else:
+                                st.error("Editing failed.")
+
+            with col_editor:
+                st.markdown("**Final Deliverables**")
+                edited_text = st.text_area(
+                    "Review and manually edit the output:",
+                    value=st.session_state.final_deliverable,
+                    height=500
                 )
-                if resp.status_code == 200:
-                    st.session_state.analysis_results = resp.json()
-                    st.session_state.thread_id = resp.json().get("thread_id")
-                    st.session_state.step = 'VALIDATING'
-                    st.rerun()
-        if st.button("← Back to Job List"):
-            st.session_state.step = 'SELECTING_JOB'
-            st.rerun()
+                st.session_state.final_deliverable = edited_text
 
-    elif st.session_state.step == 'VALIDATING':
-        res = st.session_state.analysis_results
-        ats, opt = res.get("ats_results", {}), res.get("optimizer_results", {})
-        st.subheader("🛡️ Step 4: Human Validation")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("ATS Match Score", f"{ats.get('ats_score', 'N/A')}%", delta=ats.get("recommendation", ""))
-            st.info(f"**Summary:** {ats.get('brief_summary', 'N/A')}")
-            with st.expander("✅ Matched Skills"):
-                for s in ats.get("matched_skills", []): st.write(f"- {s}")
-            with st.expander("❌ Missing Skills"):
-                for s in ats.get("missing_skills", []): st.write(f"- {s}")
-        with c2:
-            st.subheader("💡 AI Coach Advice")
-            st.write(opt.get("actionable_feedback", "No feedback."))
-            with st.expander("✨ Suggested Bullet Points"):
-                for b in opt.get("suggested_bullet_points", []): st.write(f"- {b}")
-
-        st.divider()
-        if st.button("✅ Approve & Generate Outreach", type="primary"):
-            with st.spinner("Generating customized outreach..."):
-                app_resp = requests.post(f"{backend_url}/api/approve", json={"thread_id": st.session_state.thread_id})
-                if app_resp.status_code == 200:
-                    outreach = app_resp.json().get("outreach_results", {})
-                    st.session_state.outreach_results = outreach
-                    # Add to Application Tracker
+                if st.button("🚀 Finalize & Approve", type="primary", use_container_width=True):
                     job = st.session_state.selected_job
                     st.session_state.applications.append({
                         "title": job['metadata']['title'],
                         "company": job['metadata']['company'],
-                        "email": outreach.get("recruiter_email", "N/A"),
+                        "deliverable": st.session_state.final_deliverable,
                         "status": "Applied"
                     })
-                    st.session_state.step = 'OUTREACH'
+                    st.toast("Application officially submitted! 🎉")
+                    st.session_state.step = 'IDLE'
                     st.rerun()
 
-    elif st.session_state.step == 'OUTREACH':
-        st.subheader("🎯 Step 5: Agentic Outreach Generation")
-        out = st.session_state.outreach_results
-        with st.expander("📄 Customized Cover Letter", expanded=True): st.write(out.get("cover_letter", "N/A"))
-        with st.expander("📧 Cold Recruiter Email", expanded=True): st.write(out.get("recruiter_email", "N/A"))
-        with st.expander("❓ Technical Interview Questions", expanded=True):
-            for i, q in enumerate(out.get("interview_questions", []), 1): st.write(f"**Q{i}:** {q}")
-        if st.button("🔄 Start Over"):
-            for key in list(st.session_state.keys()): del st.session_state[key]
-            st.rerun()
-
-# --- VIEW 2: AI CAREER CHATBOT ---
-elif view == "AI Career Chatbot":
-    st.header("🤖 AI Career Chatbot")
-    st.markdown("Ask me anything about your CV, interview tips, or career advice!")
-
-    # Display chat history
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    if prompt := st.chat_input("How can I improve my resume for a Senior role?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                resp = requests.post(
-                    f"{backend_url}/api/chat",
-                    json={"message": prompt, "history": st.session_state.messages[:-1]}
-                )
-                if resp.status_code == 200:
-                    answer = resp.json().get("response", "I'm sorry, I encountered an error.")
-                    st.markdown(answer)
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
-                else:
-                    st.error("Chat failed.")
-
-# --- VIEW 3: APPLICATION TRACKER ---
-elif view == "Application Tracker":
-    st.header("📋 Application Tracker")
+    # Application History Tracker
+    st.markdown("---")
+    st.subheader("📋 Application History")
     if not st.session_state.applications:
-        st.info("No applications tracked yet. Go to Dashboard to approve a match!")
+        st.info("No applications submitted yet.")
     else:
         for app in st.session_state.applications:
             with st.container(border=True):
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    st.markdown(f"**{app['title']}** at {app['company']}")
-                    with st.expander("View Sent Email"):
-                        st.write(app['email'])
-                with col2:
-                    st.markdown(f"**Status:** `{app['status']}`")
+                st.markdown(f"**{app['title']}** at {app['company']} - Status: `{app['status']}`")
+                with st.expander("View Finalized Deliverable"):
+                    st.write(app['deliverable'])

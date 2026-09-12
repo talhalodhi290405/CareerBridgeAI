@@ -41,10 +41,37 @@ async def chat_with_ai(payload: dict = Body(...)):
 
 @app.post("/api/match_jobs")
 async def match_jobs(payload: dict = Body(...)):
+    # Handle either structured preferences or a natural language prompt
+    prompt = payload.get("prompt")
     resume_text = payload.get("resume_text", "")
-    role = payload.get("role", "")
-    location = payload.get("location", "")
-    job_type = payload.get("job_type", "")
+
+    if prompt:
+        # Use LLM to parse intent into structured preferences
+        intent_prompt = f"""
+        Extract the following job preferences from the user's intent:
+        Intent: "{prompt}"
+
+        Return ONLY a JSON object with:
+        {{
+            "role": "the desired job title",
+            "location": "the preferred location (Remote/Onsite/etc)",
+            "job_type": "the type (Full-time/Internship/etc)"
+        }}
+        """
+        try:
+            parsed = llm.invoke(intent_prompt)
+            # Clean JSON from LLM response
+            clean_json = parsed.content.replace('```json', '').replace('```', '').strip()
+            prefs = json.loads(clean_json)
+            role = prefs.get("role", "")
+            location = prefs.get("location", "")
+            job_type = prefs.get("job_type", "")
+        except Exception:
+            role, location, job_type = "", "", ""
+    else:
+        role = payload.get("role", "")
+        location = payload.get("location", "")
+        job_type = payload.get("job_type", "")
 
     # Create a rich query combining preferences and resume
     query = f"Role: {role}, Location: {location}, Type: {job_type}. Candidate Experience: {resume_text[:500]}"
@@ -121,6 +148,28 @@ async def approve_candidate(payload: dict = Body(...)):
         "status": "Approved",
         "outreach_results": final_state.get("outreach_results", {})
     }
+
+@app.post("/api/edit_text")
+async def edit_text(payload: dict = Body(...)):
+    text = payload.get("text", "")
+    instruction = payload.get("instruction", "")
+
+    edit_prompt = f"""
+    You are a professional editor. Rewrite the following text based on the user's instruction.
+    Maintain the professional tone and format.
+
+    Instruction: {instruction}
+
+    Current Text:
+    {text}
+
+    Return ONLY the revised text.
+    """
+    try:
+        response = llm.invoke(edit_prompt)
+        return {"edited_text": response.content}
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
