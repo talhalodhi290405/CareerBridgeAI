@@ -365,49 +365,58 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
     if file_hash == st.session_state.get("processed_resume_hash"):
         return False  # Already processed frame!
 
-    # Execute 7-stage validation pipeline FIRST
-    val_res: DocumentValidationResult = validate_pdf_resume(file_bytes, filename=filename)
-    st.session_state.processed_resume_hash = file_hash
+    try:
+        with st.spinner("Agent: Validating 7-stage security pipeline & parsing resume document..."):
+            # Execute 7-stage validation pipeline FIRST
+            val_res: DocumentValidationResult = validate_pdf_resume(file_bytes, filename=filename)
+            st.session_state.processed_resume_hash = file_hash
 
-    if not val_res.accepted:
-        logger.warning(f"Resume upload rejected — reason: {val_res.reason}, doc_type: {val_res.document_type}, size: {val_res.file_size_mb}MB (hash: {file_hash[:8]}...)")
-        st.session_state.upload_error_msg = val_res.user_message
-        st.session_state.upload_toast_msg = None
+            if not val_res.accepted:
+                logger.warning(f"Resume upload rejected — reason: {val_res.reason}, doc_type: {val_res.document_type}, size: {val_res.file_size_mb}MB (hash: {file_hash[:8]}...)")
+                st.session_state.upload_error_msg = val_res.user_message
+                st.session_state.upload_toast_msg = None
+                _persist_state()
+                st.rerun()
+                return False
+
+            # Validation PASSED — now parse candidate profile
+            logger.info(f"Resume validation passed (hash: {file_hash[:8]}...) — parsing CandidateProfile...")
+            cand = parse_resume(file_bytes)
+
+            if cand and cand.raw_text:
+                st.session_state.candidate = cand
+                st.session_state.is_demo = False
+                st.session_state.ats_result = None
+                st.session_state.gap_result = None
+                st.session_state.optimization = None
+                st.session_state.outreach = None
+                st.session_state.show_manual_intake = False
+                st.session_state.upload_error_msg = None
+                st.session_state.upload_toast_msg = f"CV processed successfully — {len(cand.skills)} skills and {len(cand.experience)} experience entries detected."
+                
+                if any(a.source == "Demo Backup" for a in st.session_state.applications):
+                    st.session_state.applications = []
+
+                if switch_step:
+                    st.session_state.step = "profile"
+
+                _persist_state()
+                logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} — {len(cand.skills)} skills extracted (hash: {file_hash[:8]}...)")
+                st.rerun()
+                return True
+            else:
+                st.session_state.upload_error_msg = "This PDF could not be read. Please upload a valid, non-corrupted resume PDF."
+                st.session_state.upload_toast_msg = None
+                _persist_state()
+                st.rerun()
+                return False
+    except Exception as e:
+        logger.error(f"Resume parsing error: {e}")
+        st.session_state.upload_error_msg = "An unexpected error occurred while processing your CV document. Please try again or use manual profile entry."
         _persist_state()
         st.rerun()
         return False
 
-    # Validation PASSED — now parse candidate profile
-    logger.info(f"Resume validation passed (hash: {file_hash[:8]}...) — parsing CandidateProfile...")
-    cand = parse_resume(file_bytes)
-
-    if cand and cand.raw_text:
-        st.session_state.candidate = cand
-        st.session_state.is_demo = False
-        st.session_state.ats_result = None
-        st.session_state.gap_result = None
-        st.session_state.optimization = None
-        st.session_state.outreach = None
-        st.session_state.show_manual_intake = False
-        st.session_state.upload_error_msg = None
-        st.session_state.upload_toast_msg = f"CV processed successfully — {len(cand.skills)} skills and {len(cand.experience)} experience entries detected."
-        
-        if any(a.source == "Demo Backup" for a in st.session_state.applications):
-            st.session_state.applications = []
-
-        if switch_step:
-            st.session_state.step = "profile"
-
-        _persist_state()
-        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} — {len(cand.skills)} skills extracted (hash: {file_hash[:8]}...)")
-        st.rerun()
-        return True
-    else:
-        st.session_state.upload_error_msg = "This PDF could not be read. Please upload a valid, non-corrupted resume PDF."
-        st.session_state.upload_toast_msg = None
-        _persist_state()
-        st.rerun()
-        return False
 
 
 
@@ -656,19 +665,23 @@ if st.session_state.nav_section == "Dashboard":
     if st.session_state.get("coach_pending_prompt"):
         pending_q = st.session_state.coach_pending_prompt
         st.session_state.coach_pending_prompt = None
-        with st.spinner("Analyzing candidate context & generating response..."):
-            reply = ask_career_coach(
-                pending_q,
-                st.session_state.coach_history,
-                c_profile,
-                st.session_state.selected_job,
-                st.session_state.ats_result,
-                st.session_state.gap_result,
-                st.session_state.applications,
-            )
-            st.session_state.coach_history.append(CoachMessage(role="user", content=pending_q, timestamp=str(datetime.now())[:16]))
-            st.session_state.coach_history.append(CoachMessage(role="assistant", content=reply, timestamp=str(datetime.now())[:16]))
-            _persist_state()
+        try:
+            with st.spinner("Agent: Querying vector database & evaluating candidate context..."):
+                reply = ask_career_coach(
+                    pending_q,
+                    st.session_state.coach_history,
+                    c_profile,
+                    st.session_state.selected_job,
+                    st.session_state.ats_result,
+                    st.session_state.gap_result,
+                    st.session_state.applications,
+                )
+                st.session_state.coach_history.append(CoachMessage(role="user", content=pending_q, timestamp=str(datetime.now())[:16]))
+                st.session_state.coach_history.append(CoachMessage(role="assistant", content=reply, timestamp=str(datetime.now())[:16]))
+                _persist_state()
+        except Exception as e:
+            logger.error(f"Coach error: {e}")
+            st.error("Unable to generate AI Coach response at this moment.")
         st.rerun()
 
     # Prompt Chips Row
@@ -692,16 +705,14 @@ if st.session_state.nav_section == "Dashboard":
         if st.session_state.coach_history:
             latest_turns = st.session_state.coach_history[-4:]
             for msg in latest_turns:
-                if msg.role == "user":
-                    st.markdown(f"**You:** {msg.content}")
-                else:
-                    st.markdown(f"**CareerBridge Coach:**\n{msg.content}")
-                    st.markdown("---")
+                with st.chat_message(msg.role):
+                    st.markdown(msg.content)
         else:
             if c_profile and c_profile.raw_text:
                 st.info(f"Hello **{user_display_name}**! I am your AI Career Coach. Click a chip above or type below to analyze your profile context.")
             else:
                 st.info("Hello! I am your AI Career Coach. Ask any career question or select an intake option above to unlock personalized guidance.")
+
 
         with st.form("dash_coach_form", clear_on_submit=True):
             user_text_input = st.text_input("Ask CareerBridge anything...", placeholder="Type your career question here...")
@@ -824,11 +835,16 @@ elif st.session_state.nav_section == "Find Jobs":
         st.session_state.search_filters.desired_role = query_input
     with s_col2:
         if st.button("Search Live Jobs", type="primary", use_container_width=True, key="search_trigger"):
-            with st.spinner("Searching live job APIs (Jobicy → Remotive → Adzuna)..."):
-                jobs, msg = search_live_jobs(st.session_state.search_filters)
-                st.session_state.job_results = jobs
-                st.session_state.job_status_msg = msg
+            try:
+                with st.spinner("Agent: Querying live job APIs & matching candidate embeddings..."):
+                    jobs, msg = search_live_jobs(st.session_state.search_filters)
+                    st.session_state.job_results = jobs
+                    st.session_state.job_status_msg = msg
+            except Exception as e:
+                logger.error(f"Live job search error: {e}")
+                st.error("Failed to query live job market. You can retry or load the demo dataset.")
             st.rerun()
+
 
     with st.expander("⚙️ Optional Search Filters (Country, City, Work Arrangement, Salary)", expanded=False):
         fc1, fc2, fc3 = st.columns(3)
@@ -1055,11 +1071,18 @@ elif st.session_state.nav_section == "ATS Scanner":
         st.session_state.selected_job = target_job
 
         if st.button("🚀 Run Deterministic ATS Check", type="primary", use_container_width=True):
-            ats = analyze_ats(c_profile, target_job)
-            gaps = analyze_gaps(c_profile, target_job)
-            st.session_state.ats_result = ats
-            st.session_state.gap_result = gaps
-            _persist_state()
+            try:
+                with st.spinner("Agent: Evaluating ATS match & analyzing skill gaps..."):
+                    ats = analyze_ats(c_profile, target_job)
+                    gaps = analyze_gaps(c_profile, target_job)
+                    st.session_state.ats_result = ats
+                    st.session_state.gap_result = gaps
+                    _persist_state()
+            except Exception as e:
+                logger.error(f"ATS analysis error: {e}")
+                st.error("Unable to evaluate ATS score for the selected job. Please try again.")
+            st.rerun()
+
 
         if st.session_state.ats_result is None:
             st.info("Click **Run Deterministic ATS Check** above to evaluate your CV against the selected job.")
@@ -1118,12 +1141,17 @@ elif st.session_state.nav_section == "Improve CV":
 
         if st.session_state.optimization is None:
             if st.button("✨ Generate Profile Optimization", type="primary", use_container_width=True):
-                with st.spinner("Generating profile optimization with X-Y-Z guardrails..."):
-                    st.session_state.optimization = optimize_profile(c_profile, target_job, ats_score)
-                    _persist_state()
+                try:
+                    with st.spinner("Agent: Optimizing resume bullets with X-Y-Z guardrails..."):
+                        st.session_state.optimization = optimize_profile(c_profile, target_job, ats_score)
+                        _persist_state()
+                except Exception as e:
+                    logger.error(f"Profile optimization error: {e}")
+                    st.error("Failed to generate profile optimization. Please try again.")
                 st.rerun()
             else:
                 st.info("Click **Generate Profile Optimization** above to optimize your CV summary and experience bullets.")
+
         else:
             opt: OptimizedProfile = st.session_state.optimization
 
@@ -1184,14 +1212,24 @@ elif st.session_state.nav_section == "Cover Letter":
         tone = st.radio("Tone Style:", ["Standard", "Concise", "Technical", "Formal"], horizontal=True)
 
         if st.button("✨ Generate Cover Letter", type="primary", use_container_width=True, key="gen_cl"):
-            with st.spinner("Generating grounded cover letter..."):
-                cl = generate_cover_letter(c_profile, target_job, tone=tone)
-                st.session_state["cover_letter"] = cl
+            try:
+                with st.spinner("Agent: Synthesizing customized cover letter..."):
+                    cl = generate_cover_letter(c_profile, target_job, tone=tone)
+                    st.session_state["cover_letter"] = cl
+            except Exception as e:
+                logger.error(f"Cover letter generation error: {e}")
+                st.error("Failed to generate cover letter. Please try again.")
 
         cl = st.session_state.get("cover_letter")
         if cl is None:
-            cl = generate_cover_letter(c_profile, target_job, tone=tone)
-            st.session_state["cover_letter"] = cl
+            try:
+                with st.spinner("Agent: Synthesizing customized cover letter..."):
+                    cl = generate_cover_letter(c_profile, target_job, tone=tone)
+                    st.session_state["cover_letter"] = cl
+            except Exception as e:
+                logger.error(f"Default cover letter generation error: {e}")
+                cl = CoverLetter(content="Cover letter could not be generated.", tone=tone)
+
 
         st.markdown(f"**Target:** {target_job.title} at {target_job.company}")
         editable_cl = st.text_area("Cover Letter:", value=cl.content, height=350)

@@ -85,7 +85,17 @@ def _generate_fallback_coach_response(
     """Deterministic, context-aware fallback response generator."""
     q_lower = query.lower()
 
-    if "ats" in q_lower or "score" in q_lower or "low" in q_lower:
+    if "job" in q_lower or "fit" in q_lower or "role" in q_lower or "recommend" in q_lower:
+        if candidate and candidate.skills:
+            sk_str = ", ".join(candidate.skills[:5])
+            return f"**Job Fit Analysis for {candidate.name or 'Candidate'}:**\n\n" \
+                   f"Based on your profile, your top verified skills are **{sk_str}**.\n\n" \
+                   f"💡 **Coach Recommendation:**\n" \
+                   f"- Roles like **Software Engineer**, **ML Engineer**, and **Backend Developer** align best with your technical background.\n" \
+                   f"- Search the **Find Jobs** tab for live opportunities and target roles with match scores above 70%."
+        return "Select **Find Jobs** in the sidebar to search live openings tailored to your target role and skill set."
+
+    elif "ats" in q_lower or "score" in q_lower or "low" in q_lower:
         if ats:
             return f"**ATS Breakdown Analysis ({ats.overall_score}/100):**\n" \
                    f"- **Skills Match:** {ats.skills_match}%\n" \
@@ -120,13 +130,12 @@ def _generate_fallback_coach_response(
                "2. Ensure metrics come strictly from real project data (X-Y-Z guardrail).\n" \
                "3. Navigate to **Improve CV** in the sidebar to view side-by-side Before/After bullet enhancements."
 
+    elif any(kw in q_lower for kw in ["hi", "hello", "hey", "greetings"]):
+        name = candidate.name if candidate and candidate.name else "Candidate"
+        return f"Hello {name}! I am your **CareerBridge AI Coach**. Ask me about your ATS score, missing skills, resume bullets, or job recommendations!"
+
     else:
         name = candidate.name if candidate and candidate.name else "Candidate"
         skills_str = ", ".join(candidate.skills[:5]) if candidate and candidate.skills else "Software Engineering"
-        return f"Hello {name}! I am your **CareerBridge AI Coach**.\n\n" \
-               f"Currently tracking your profile with core skills in **{skills_str}**.\n\n" \
-               f"Ask me questions like:\n" \
-               f"- *'Why is my ATS score low?'*\n" \
-               f"- *'What skills am I missing?'*\n" \
-               f"- *'Should I apply to the selected job?'*\n" \
-               f"- *'How can I improve my CV bullets?'*"
+        return f"I am actively tracking your profile context (**{skills_str}**). How can I assist your career strategy today?"
+
