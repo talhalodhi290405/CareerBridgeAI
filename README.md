@@ -1,8 +1,8 @@
-# 🚀 CareerBridge AI
+# 🚀 CareerBridge AI — Career Intelligence & Talent Triage Platform
 
-**Autonomous Talent Triage & Profile Optimization System**
+**Autonomous Talent Triage, Profile Optimization & Live Career Command Center**
 
-CareerBridge AI helps early-career candidates understand how well their resume matches a target technology job, identify ATS and skill gaps, improve their profile without inventing facts, and generate personalized recruiter outreach and interview preparation.
+CareerBridge AI helps early-career candidates understand how well their resume matches target technology jobs, identify ATS and skill gaps, optimize their profile without inventing facts, search live global job listings, track job applications, and generate personalized cover letters and recruiter outreach.
 
 ---
 
@@ -12,13 +12,18 @@ Early-career candidates face a black-box ATS screening process. They don't know:
 - How their resume scores against real job requirements
 - Which skills are missing vs. which are already strong
 - How to improve their resume *without fabricating credentials*
-- How to write compelling recruiter outreach grounded in actual experience
+- Where to discover live matching technical opportunities
+- How to manage their application pipeline and prepare for technical interviews
 
 ## 💡 Solution
 
-CareerBridge AI provides a complete, transparent pipeline:
+CareerBridge AI provides a dual-interface career intelligence system:
 
-**Resume → Profile → Job Matching → ATS Scoring → Gap Analysis → AI Optimization → Human Review → Recruiter Outreach → Interview Prep**
+1. **Guided Step-by-Step Golden-Path Wizard**:
+   Resume Intake → Profile → Job Matching → ATS Scoring → Gap Analysis → AI Optimization → Human Review → Recruiter Outreach → Interview Prep
+
+2. **Enterprise Career Command Center Dashboard**:
+   A 10-section HR-Tech dashboard with live job search, application Kanban pipeline, interactive profile editor, cover letter generator, AI Career Coach chatbot, and pipeline analytics.
 
 Every score is deterministic and explainable. Every optimization is grounded in the candidate's actual evidence. The system never fabricates skills, metrics, or experience.
 
@@ -28,55 +33,62 @@ Every score is deterministic and explainable. Every optimization is grounded in 
 
 | Feature | Description |
 |---------|-------------|
+| **10-Section Navigation** | Dashboard, Find Jobs, My CV, ATS Scanner, Improve CV, Cover Letter, Applications, AI Coach, Analytics, Settings |
+| **Live Job Search** | Provider abstraction chain: Adzuna → Remotive → Jobicy → Arbeitnow → Emergency Demo Backup |
 | **PDF Resume Parsing** | pdfplumber-based extraction with structured section detection |
-| **15 Curated Job Listings** | AI/ML, Software Engineering, Data, Robotics, Internships, Remote/Onsite |
 | **Deterministic ATS Scoring** | Reproducible scores based on skill overlap, keyword coverage, section completeness |
 | **VERIFIED / INFERRED / MISSING** | Transparent skill classification — never converts missing into verified |
-| **AI Optimization** | LLM-powered profile enhancement with strict anti-hallucination guardrails |
+| **AI Profile Optimization** | LLM-powered enhancement with strict anti-hallucination guardrails |
 | **X-Y-Z Guardrails** | Only uses real metrics from the resume — never invents percentages or figures |
-| **Human-in-the-Loop** | Explicit approve/reject workflow before generating outreach |
-| **Recruiter Email + InMail** | Personalized outreach grounded in candidate evidence |
-| **3 Technical Interview Questions** | Role-specific, not generic behavioral questions |
-| **Demo Mode** | Full golden path works offline with pre-computed results |
-| **Graceful Fallback** | AI failures degrade to deterministic results — never crash |
+| **Cover Letter Generator** | Tailored cover letters with Standard, Concise, Technical, and Formal tone controls |
+| **Application Tracker** | Visual Kanban pipeline (Saved → Applied → Interview → Offer + Rejected) |
+| **AI Career Coach Chatbot** | Interactive assistant with candidate profile, ATS, and application memory |
+| **Demo Mode & Fallback** | Full golden path works offline with pre-computed results when API keys are absent |
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌──────────────────────────────────────────────┐
-│            Streamlit (Single Process)         │
-├──────────────────────────────────────────────┤
-│  frontend/app.py                             │
-│    ├─ Resume Intake (PDF upload / Demo)      │
-│    ├─ Candidate Profile Display              │
-│    ├─ Job Matching (deterministic)           │
-│    ├─ ATS Analysis (deterministic + LLM)     │
-│    ├─ Gap Analysis (VERIFIED/INFERRED/MISS)  │
-│    ├─ Optimization (LLM with fallback)       │
-│    ├─ Human Approval                         │
-│    └─ Outreach & Interview Prep              │
-├──────────────────────────────────────────────┤
-│  backend/                                    │
-│    ├─ models.py      (Pydantic schemas)      │
-│    ├─ config.py      (centralized config)    │
-│    ├─ llm_service.py (Groq + fallback)       │
-│    ├─ parser.py      (pdfplumber)            │
-│    ├─ rag_engine.py  (job matching)          │
-│    ├─ ats_engine.py  (deterministic scoring) │
-│    ├─ optimizer.py   (profile optimization)  │
-│    ├─ outreach.py    (email/InMail/questions) │
-│    ├─ demo.py        (fallback data loader)  │
-│    └─ prompts.py     (LLM prompt templates)  │
-├──────────────────────────────────────────────┤
-│  data/                                       │
-│    ├─ jobs.json          (15 curated jobs)    │
-│    └─ demo_backup.json   (offline demo data) │
-└──────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                         Streamlit App (frontend/app.py)                          │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ Persistent 10-Section Navigation Sidebar:                                       │
+│ 1. 📊 Dashboard      2. 🔍 Find Jobs    3. 👤 My CV           4. 📊 ATS Scanner   │
+│ 5. ✨ Improve CV     6. ✉️ Cover Letter 7. 📁 Applications    8. 🤖 AI Coach      │
+│ 9. 📈 Analytics     10. ⚙️ Settings    [🚀 Guided Golden-Path Wizard]            │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ Backend Services (backend/):                                                     │
+│ ├─ job_service.py   (Adzuna → Remotive → Jobicy → Arbeitnow → Demo Backup)      │
+│ ├─ cover_letter.py  (Standard, Concise, Technical, Formal cover letter generator)│
+│ ├─ coach.py         (Context-aware AI Career Coach Chatbot)                     │
+│ ├─ storage.py       (Local session state persistence helper)                    │
+│ ├─ models.py        (Pydantic schemas: CandidateProfile, JobPosting, Apps, etc.) │
+│ ├─ config.py        (Centralized configuration & API key management)             │
+│ ├─ llm_service.py   (Groq SDK interface with deterministic fallback)            │
+│ ├─ parser.py        (pdfplumber structured resume parser)                        │
+│ ├─ rag_engine.py    (Deterministic skill & keyword matching engine)             │
+│ ├─ ats_engine.py    (Deterministic ATS scoring & gap classification)           │
+│ ├─ optimizer.py     (Anti-hallucination profile optimizer)                       │
+│ ├─ outreach.py      (Recruiter email, LinkedIn InMail & 3 technical questions)  │
+│ └─ demo.py          (Offline demo dataset loader)                                │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│ Data Layer (data/):                                                              │
+│ ├─ jobs.json        (15 curated technical job listings)                          │
+│ └─ demo_backup.json (Offline pre-computed backup dataset)                       │
+└──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Single-process architecture** — no separate backend server required. Deploys directly to Streamlit Community Cloud.
+**Single-process Streamlit Architecture:**
+The app is intentionally deployed as a unified single-process Streamlit application. No separate FastAPI server or ChromaDB instance is required at runtime, ensuring maximum deployment reliability on Streamlit Community Cloud.
+
+---
+
+## 💾 Persistence Model
+
+> **Hackathon persistence stores application state locally for the active deployment instance.**
+
+Candidate profiles, saved jobs, application status changes, search preferences, and coach conversation history are saved locally in `data/user_session.json` to preserve state across Streamlit reruns.
 
 ---
 
@@ -87,8 +99,9 @@ Every score is deterministic and explainable. Every optimization is grounded in 
 | Frontend & App | Streamlit |
 | PDF Parsing | pdfplumber |
 | Data Models | Pydantic v2 |
-| AI Inference | Groq API (Llama 3.1 8B) |
-| Scoring | Deterministic Python |
+| AI Inference | Groq API (Llama 3.1 8B Instant) |
+| Live Job Providers | Adzuna API, Remotive API, Jobicy API, Arbeitnow API |
+| Scoring Engine | Deterministic Python |
 | Configuration | python-dotenv / st.secrets |
 
 ---
@@ -113,14 +126,15 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 4. Configure environment variables
-```bash
-# Copy and edit .env
-# Set your Groq API key (get one at https://console.groq.com/keys)
+### 4. Configure environment variables (Optional)
+Create `.env` or set in `.streamlit/secrets.toml`:
+```env
 GROQ_API_KEY=your_actual_groq_api_key
+ADZUNA_APP_ID=your_adzuna_app_id
+ADZUNA_APP_KEY=your_adzuna_app_key
 ```
 
-> **Note:** The application works fully in Demo Mode without an API key. The AI key enables LLM-powered optimizations.
+> **Note:** The application works fully in Demo Mode without API keys. Free open APIs (Remotive, Jobicy) supply live jobs automatically if Adzuna keys are absent.
 
 ### 5. Run the application
 ```bash
@@ -131,93 +145,42 @@ The app will open at `http://localhost:8501`.
 
 ---
 
-## 🔐 Environment Variables
+## 🔐 Environment Variables & Secrets
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `GROQ_API_KEY` | No | Groq API key for LLM features. Without it, Demo Mode activates automatically. |
-| `LLM_MODEL` | No | Override the default model (default: `llama-3.1-8b-instant`) |
+| `GROQ_API_KEY` | No | Groq API key for LLM features. Without it, Fallback Mode activates automatically. |
+| `ADZUNA_APP_ID` | No | Adzuna job search APP ID. |
+| `ADZUNA_APP_KEY` | No | Adzuna job search APP KEY. |
 
-For Streamlit Community Cloud, set these in `.streamlit/secrets.toml` (not committed):
+For Streamlit Community Cloud deployment, configure `.streamlit/secrets.toml`:
 ```toml
 GROQ_API_KEY = "your_key_here"
+ADZUNA_APP_ID = "your_id_here"
+ADZUNA_APP_KEY = "your_key_here"
 ```
 
 ---
 
-## ⚡ Demo Mode
+## ⚡ Demo Mode & Fallback Integrity
 
-CareerBridge AI includes a complete **Demo Mode** that works without any external API:
-
-1. Click **"Load Demo Profile"** on the intake screen
-2. Walk through the entire golden path with pre-computed results
-3. See Alex Chen's profile optimization from **48/100 → 88/100**
-
-Demo Mode activates automatically when:
-- No API key is configured
-- The Groq API is unreachable
-- An LLM request times out or returns invalid data
-
-User message: *"AI service temporarily unavailable. Demo Mode has been activated."*
+CareerBridge AI includes complete offline fallback capabilities:
+- **Missing API Keys**: Activates Demo Mode automatically for LLM functions.
+- **Job Providers**: Falls back gracefully across providers (Adzuna → Remotive → Jobicy → Arbeitnow → Demo Backup).
+- **Data Integrity**: Static demo jobs are explicitly labeled `Source: Demo Backup`. Live jobs display their exact source badge (`Source: Remotive`, `Source: Jobicy`, `Source: Adzuna`).
 
 ---
 
 ## 🚀 Deployment (Streamlit Community Cloud)
 
-1. Push to GitHub
-2. Connect to [share.streamlit.io](https://share.streamlit.io)
+1. Push code to GitHub repository
+2. Connect repository to [share.streamlit.io](https://share.streamlit.io)
 3. Set main file path: `frontend/app.py`
-4. Add secrets in the Streamlit dashboard:
-   ```
-   GROQ_API_KEY = "your_key_here"
-   ```
-5. Deploy
-
-No additional servers, databases, or infrastructure required.
-
----
-
-## 🎯 Golden Path Demo Instructions
-
-1. **Open the app** → See the intake screen
-2. **Click "Load Demo Profile"** → Alex Chen's profile loads
-3. **Click "Find Matching Jobs"** → 5 ranked jobs appear
-4. **Click "Analyze" on ML Engineer** → ATS score + gap analysis
-5. **Click "Optimize Profile"** → Before/After comparison (48→88)
-6. **Click "Review & Approve"** → Human approval step
-7. **Click "Approve Optimization"** → Outreach generated
-8. **View tabs** → Recruiter Email, InMail, 3 Interview Questions
-
----
-
-## 🛡️ AI Safety & Anti-Hallucination
-
-CareerBridge AI implements strict guardrails:
-
-- **Deterministic scoring**: ATS scores are computed from skill overlap, keyword coverage, and section completeness — not LLM-generated numbers
-- **VERIFIED/INFERRED/MISSING**: Every skill is explicitly classified based on resume evidence
-- **X-Y-Z Guardrail**: Metrics in optimized bullets only appear when real numbers exist in the resume
-- **No fabrication**: The system never invents skills, companies, certifications, metrics, or experience
-- **Schema validation**: All LLM outputs are validated against Pydantic schemas; invalid responses trigger deterministic fallback
-- **Evidence grounding**: Outreach and interview questions reference only verified candidate information
-
----
-
-## 🔄 Error & Fallback Behavior
-
-| Failure | Behavior |
-|---------|----------|
-| Missing API key | Demo Mode activates automatically |
-| LLM timeout | Deterministic fallback used |
-| Invalid LLM JSON | Pydantic validation catches; fallback used |
-| Malformed PDF | User-friendly error message; no crash |
-| Network failure | Graceful degradation to offline mode |
-| Rate limiting | Retry with backoff; then fallback |
-
-**No raw tracebacks are ever shown to users.**
+4. Add secrets in Streamlit App Dashboard (optional)
+5. Deploy!
 
 ---
 
 ## 📄 License
 
-MIT License — Built for hackathon demonstration purposes.
+MIT License — Built for hackathon demonstration.

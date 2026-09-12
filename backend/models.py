@@ -37,12 +37,70 @@ class JobPosting(BaseModel):
     title: str
     company: str
     location: str
+    country: Optional[str] = None
+    city: Optional[str] = None
     remote: bool = False
-    experience_level: str = "Mid-level"
-    type: str = "Full-time"
+    work_arrangement: str = "Any"  # Remote, Hybrid, On-site, Any
+    employment_type: str = "Full-time"  # Full-time, Part-time, Internship, Contract, Freelance, Any
+    experience_level: str = "Mid-level"  # Any, Internship, Entry-level, Junior, Mid-level
+    type: str = "Full-time"  # legacy alias
     description: str
+    description_is_snippet: bool = True  # True if preview snippet, False if full description
+    salary_min: Optional[float] = None
+    salary_max: Optional[float] = None
+    salary_currency: Optional[str] = None
+    posted_date: Optional[str] = None
+    url: Optional[str] = None
+    source: str = "Demo Backup"  # Adzuna, Arbeitnow, Remotive, Demo Backup
     required_skills: List[str] = Field(default_factory=list)
     preferred_skills: List[str] = Field(default_factory=list)
+
+
+class JobSearchFilters(BaseModel):
+    desired_role: str = ""
+    country: str = ""
+    city: str = ""
+    work_arrangement: str = "Any"  # Any, Remote, Hybrid, On-site
+    employment_type: str = "Any"   # Any, Full-time, Part-time, Internship, Contract, Freelance
+    experience_level: str = "Any"  # Any, Internship, Entry-level, Junior, Mid-level
+    min_salary: Optional[float] = None
+    max_salary: Optional[float] = None
+    currency: str = "USD"
+
+
+class ApplicationStatus(str, Enum):
+    SAVED = "Saved"
+    APPLIED = "Applied"
+    INTERVIEW = "Interview"
+    OFFER = "Offer"
+    REJECTED = "Rejected"
+
+
+class ApplicationRecord(BaseModel):
+    id: str
+    job_id: str
+    job_title: str
+    company: str
+    job_url: Optional[str] = None
+    source: str = "Demo"
+    status: ApplicationStatus = ApplicationStatus.SAVED
+    date: str = ""
+    notes: str = ""
+    ats_score: Optional[int] = None
+    match_score: Optional[float] = None
+
+
+class CoverLetter(BaseModel):
+    content: str = ""
+    tone: str = "Standard"  # Standard, Concise, Technical, Formal
+    job_title: str = ""
+    company: str = ""
+
+
+class CoachMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+    timestamp: str = ""
 
 
 class MatchResult(BaseModel):
