@@ -175,7 +175,9 @@ footer {{visibility: hidden;}}
 .stDeployButton {{display: none;}}
 
 .top-bar-container {{
-    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'};
+    background-color: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'};
     padding: 1rem 1.5rem; display: flex; align-items: center;
     justify-content: space-between; margin-bottom: 1.25rem;
     border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
@@ -194,11 +196,12 @@ footer {{visibility: hidden;}}
 .pill-demo {{ background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }}
 .pill-empty {{ background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }}
 
-/* Dashboard Cards & Containers */
+/* Dashboard Cards & Containers (Using Streamlit Native Theme Variables) */
 .dash-card {{
-    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    background-color: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
     padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    color: {'#F3F4F6' if is_dark_mode else '#0F172A'};
 }}
 .dash-card-hdr {{
     font-size: 1.05rem; font-weight: 700; color: {'#F3F4F6' if is_dark_mode else '#0F172A'}; margin-bottom: 0.25rem;
@@ -206,9 +209,11 @@ footer {{visibility: hidden;}}
 }}
 .dash-card-sub {{ font-size: 0.82rem; color: {'#9CA3AF' if is_dark_mode else '#64748B'}; margin-bottom: 0.85rem; }}
 
-/* Metric Cards */
+/* Metric Cards (Using Streamlit Native Theme Variables) */
 .metric-box {{
-    background: {'#0F172A' if is_dark_mode else '#FFFFFF'}; border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    background-color: var(--secondary-background-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
     padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01);
 }}
 .metric-val {{
@@ -265,6 +270,25 @@ div[data-testid="stAlert"] {{
 .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
     background-color: {'#334155' if is_dark_mode else '#F1F5F9'};
     color: {'#FFFFFF' if is_dark_mode else '#2563EB'};
+}}
+
+{'''
+.stTextInput label, .stSelectbox label, .stNumberInput label, p, span, h1, h2, h3 {
+    color: #FFFFFF !important;
+}
+div[data-testid="stExpander"] summary * {
+    color: #FFFFFF !important;
+}
+''' if is_dark_mode else ''}
+
+@media (prefers-color-scheme: dark) {{
+    .stTextInput label, .stSelectbox label, .stNumberInput label, p, span, h1, h2, h3 {{
+        color: #FFFFFF !important;
+    }}
+    /* Ensure the expander headers are also bright white */
+    div[data-testid="stExpander"] summary * {{
+        color: #FFFFFF !important;
+    }}
 }}
 </style>
 """
