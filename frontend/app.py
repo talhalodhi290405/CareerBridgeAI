@@ -79,7 +79,7 @@ st.markdown("""
     font-family: 'Inter', -apple-system, sans-serif;
 }
 
-/* Sidebar Styling */
+/* Sidebar Enterprise Navigation Styling */
 [data-testid="stSidebar"] {
     background-color: #0B1F33 !important;
     border-right: 1px solid #1E293B;
@@ -87,13 +87,51 @@ st.markdown("""
 [data-testid="stSidebar"] * {
     color: #E2E8F0 !important;
 }
+
+/* Hide any native radio buttons in sidebar */
+[data-testid="stSidebar"] div[role="radiogroup"] {
+    display: none !important;
+}
+
+/* Sidebar Custom Clickable Navigation Item Styling */
+[data-testid="stSidebar"] button {
+    text-align: left !important;
+    justify-content: flex-start !important;
+    border: none !important;
+    border-radius: 0.5rem !important;
+    padding: 0.55rem 0.85rem !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    color: #94A3B8 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 0.15rem !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+[data-testid="stSidebar"] button:hover {
+    color: #FFFFFF !important;
+    background-color: #1E293B !important;
+}
+
+/* Active Nav Item Styling */
+[data-testid="stSidebar"] button[kind="primary"],
+[data-testid="stSidebar"] button[data-testid="baseButton-primary"] {
+    background-color: #2563EB !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    border-left: 4px solid #60A5FA !important;
+}
+
 .sidebar-brand {
-    font-size: 1.3rem; font-weight: 800; color: #FFFFFF !important;
-    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.75rem 0;
-    border-bottom: 1px solid #1E293B; margin-bottom: 0.75rem;
+    font-size: 1.25rem; font-weight: 800; color: #FFFFFF !important;
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
+}
+.sidebar-sub {
+    font-size: 0.72rem; color: #64748B !important; margin-bottom: 0.85rem; font-weight: 500;
 }
 .sidebar-cat {
-    font-size: 0.7rem; font-weight: 700; color: #64748B !important;
+    font-size: 0.68rem; font-weight: 700; color: #64748B !important;
     text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
 }
 
@@ -170,7 +208,7 @@ footer {visibility: hidden;}
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Session State Initialization (Strict Defaults)
+# Session State Initialization (Strict Clean Defaults)
 # ---------------------------------------------------------------------------
 _defaults = {
     "nav_section": "Dashboard",
@@ -299,45 +337,50 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Sidebar Navigation (Categorized Enterprise SaaS Layout)
+# Sidebar Navigation (Enterprise SaaS Grouped Navigation Items — Zero Radio Dots)
 # ---------------------------------------------------------------------------
+nav_categories = [
+    ("OVERVIEW", [
+        ("📊 Dashboard", "Dashboard")
+    ]),
+    ("CAREER MANAGEMENT", [
+        ("🔍 Find Jobs", "Find Jobs"),
+        ("👤 My CV", "My CV"),
+        ("📊 ATS Scanner", "ATS Scanner"),
+        ("✨ Improve CV", "Improve CV"),
+        ("✉️ Cover Letter", "Cover Letter")
+    ]),
+    ("PIPELINE TRACKING", [
+        ("📁 Applications", "Applications")
+    ]),
+    ("AI INTELLIGENCE", [
+        ("🤖 AI Career Coach", "AI Career Coach"),
+        ("📈 Analytics", "Analytics")
+    ]),
+    ("SYSTEM & WORKFLOW", [
+        ("⚙️ Settings", "Settings"),
+        ("🚀 Guided Golden Path", "Guided Golden Path")
+    ])
+]
+
 with st.sidebar:
     st.markdown('<div class="sidebar-brand">🚀 CareerBridge AI</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="sidebar-cat">OVERVIEW</div>', unsafe_allow_html=True)
-    nav_overview = ["📊 Dashboard"]
-    
-    st.markdown('<div class="sidebar-cat">CAREER MANAGEMENT</div>', unsafe_allow_html=True)
-    nav_career = ["🔍 Find Jobs", "👤 My CV", "📊 ATS Scanner", "✨ Improve CV", "✉️ Cover Letter"]
-    
-    st.markdown('<div class="sidebar-cat">PIPELINE TRACKING</div>', unsafe_allow_html=True)
-    nav_pipeline = ["📁 Applications"]
+    st.markdown('<div class="sidebar-sub">AI Career Intelligence Platform</div>', unsafe_allow_html=True)
+    st.markdown("---")
 
-    st.markdown('<div class="sidebar-cat">AI INTELLIGENCE</div>', unsafe_allow_html=True)
-    nav_intel = ["🤖 AI Career Coach", "📈 Analytics"]
-
-    st.markdown('<div class="sidebar-cat">SYSTEM & WORKFLOW</div>', unsafe_allow_html=True)
-    nav_system = ["⚙️ Settings", "🚀 Guided Golden Path"]
-
-    all_nav = nav_overview + nav_career + nav_pipeline + nav_intel + nav_system
-    
-    cur_nav = st.session_state.nav_section
-    match_idx = 0
-    for idx, opt in enumerate(all_nav):
-        if cur_nav in opt:
-            match_idx = idx
-            break
-
-    selected_nav = st.radio("Navigation Menu", all_nav, index=match_idx, label_visibility="collapsed")
-    clean_nav = selected_nav.split(" ", 1)[1] if " " in selected_nav else selected_nav
-    st.session_state.nav_section = clean_nav
-    _persist_state()
+    for cat_name, items in nav_categories:
+        st.markdown(f'<div class="sidebar-cat">{cat_name}</div>', unsafe_allow_html=True)
+        for label, sec_key in items:
+            is_active = (st.session_state.nav_section == sec_key)
+            if st.button(label, key=f"snav_{sec_key}", type="primary" if is_active else "secondary", use_container_width=True):
+                if st.session_state.nav_section != sec_key:
+                    st.session_state.nav_section = sec_key
+                    _persist_state()
+                    st.rerun()
 
     st.markdown("---")
-    # Global Real-Time System Status Verification
+    # Global System Status System (Sidebar Footer)
     api_k = get_api_key()
-    adz_id, _ = get_adzuna_credentials()
-    
     st.markdown("**Enterprise System Status:**")
     st.markdown(f"- AI Engine: `{'● Live (Groq)' if api_k else '● Fallback Engine'}`")
     st.markdown(f"- Job APIs: `{'● Live Search Active' if 'LIVE' in st.session_state.job_status_msg else '● Ready for Search'}`")
@@ -347,7 +390,7 @@ with st.sidebar:
 
 
 # ---------------------------------------------------------------------------
-# Top Header Bar Bar & Greeting
+# Top Header Bar & Greeting
 # ---------------------------------------------------------------------------
 c_profile: Optional[CandidateProfile] = st.session_state.candidate
 quality_info = assess_extraction_quality(c_profile)
@@ -440,7 +483,6 @@ if st.session_state.nav_section == "Dashboard":
             st.caption("Status: **⚪ No Profile Loaded** — Select an intake option above to activate your dashboard.")
 
         else:
-            # Active candidate card with extraction quality audit
             completeness = quality_info["completeness_score"]
             is_low = quality_info["is_low_quality"]
 
