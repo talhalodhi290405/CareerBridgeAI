@@ -3,3 +3,7 @@ pdfplumber
 pydantic
 python-dotenv
 groq
+fastapi
+uvicorn
+requests
+httpx

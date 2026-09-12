@@ -548,14 +548,6 @@ if st.session_state.nav_section == "Dashboard":
             </div>
             """, unsafe_allow_html=True)
 
-            if is_low and not st.session_state.is_demo:
-                st.markdown(f"""
-                <div class="warn-card">
-                    <strong>⚠️ Some resume sections could not be confidently extracted:</strong> {', '.join(quality_info['flags'])}.
-                    Click <strong>Edit Profile Manually</strong> below to fill in missing details.
-                </div>
-                """, unsafe_allow_html=True)
-
             ac1, ac2, ac3, ac4 = st.columns([1.5, 1, 1, 1])
             with ac1:
                 up_new = st.file_uploader("Upload New PDF", type=["pdf"], key="dash_cv_reupload", label_visibility="collapsed")
