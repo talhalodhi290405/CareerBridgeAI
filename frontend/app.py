@@ -333,7 +333,7 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         st.session_state.outreach = None
         st.session_state.show_manual_intake = False
         st.session_state.upload_error_msg = None
-        st.session_state.upload_toast_msg = f"CV processed successfully: {cand.name or 'Candidate Profile'}"
+        st.session_state.upload_toast_msg = f"CV processed successfully — {len(cand.skills)} skills and {len(cand.experience)} experience entries detected."
         
         if any(a.source == "Demo Backup" for a in st.session_state.applications):
             st.session_state.applications = []
@@ -342,7 +342,7 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
             st.session_state.step = "profile"
 
         _persist_state()
-        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} (hash: {file_hash[:8]}...)")
+        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} — {len(cand.skills)} skills extracted (hash: {file_hash[:8]}...)")
         st.rerun()
         return True
     else:
@@ -351,6 +351,7 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         _persist_state()
         st.rerun()
         return False
+
 
 
 # ---------------------------------------------------------------------------
@@ -540,6 +541,9 @@ if st.session_state.nav_section == "Dashboard":
                 </div>
                 <div class="dash-card-sub">
                     Profile Completeness: <strong>{completeness}%</strong> · Detected Skills: <strong>{quality_info['detected_skills_count']}</strong> · Experience Entries: <strong>{quality_info['experience_entries_count']}</strong>
+                </div>
+                <div style="margin-top:0.4rem;">
+                    {' '.join([f'<span class="tag-v">{s}</span>' for s in c_profile.skills]) if c_profile.skills else '<span style="color:#9CA3AF;font-style:italic;">No skills extracted</span>'}
                 </div>
             </div>
             """, unsafe_allow_html=True)

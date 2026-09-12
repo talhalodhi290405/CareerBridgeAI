@@ -9,14 +9,66 @@ from backend.models import CandidateProfile, DocumentValidationResult
 from backend.config import logger
 
 COMMON_TECH_SKILLS = [
-    "Python", "Java", "C++", "C#", "JavaScript", "TypeScript", "React", "Angular", "Vue",
-    "Node.js", "Express", "FastAPI", "Django", "Flask", "SQL", "PostgreSQL", "MySQL", "MongoDB",
-    "Redis", "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Git", "Linux", "CI/CD",
-    "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Scikit-Learn", "Pandas",
-    "NumPy", "NLP", "Computer Vision", "REST API", "GraphQL", "HTML", "CSS", "Tailwind",
-    "Bootstrap", "Data Analysis", "Agile", "Scrum", "Jira", "Figma", "Microservices", "Go",
-    "Rust", "PHP", "Swift", "Kotlin", "Flutter", "Spark", "Hadoop", "Tableau", "PowerBI"
+    # Programming Languages
+    "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "C", "Go", "Rust", "SQL",
+    "R", "PHP", "Swift", "Kotlin", "Ruby", "Bash", "Shell", "HTML", "CSS",
+    # AI / ML / Data Science
+    "Machine Learning", "Deep Learning", "Artificial Intelligence", "NLP", "Computer Vision",
+    "TensorFlow", "PyTorch", "Scikit-Learn", "Transformers", "Neural Networks", "Keras",
+    "HuggingFace", "OpenCV", "Data Science", "Data Analysis", "Data Mining",
+    # Agentic AI & LLMs
+    "LangChain", "LangGraph", "RAG", "Vector Database", "ChromaDB", "FAISS", "Agents",
+    "LLM", "Large Language Models", "Prompt Engineering", "Ollama", "OpenAI", "Llama",
+    # Backend / Web
+    "FastAPI", "Django", "Flask", "Node.js", "Express", "REST API", "GraphQL", "Microservices",
+    "Spring Boot", "ASP.NET", "gRPC", "WebSockets",
+    # Frontend
+    "React", "Next.js", "Angular", "Vue", "Tailwind", "Bootstrap", "Redux", "Svelte",
+    # Databases
+    "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "Elasticsearch", "DynamoDB", "Cassandra", "Firebase",
+    # Cloud & DevOps
+    "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Git", "GitHub", "GitLab", "CI/CD",
+    "Linux", "Terraform", "Ansible", "Jenkins", "Nginx",
+    # Data Engineering & BI
+    "Pandas", "NumPy", "Matplotlib", "Seaborn", "Power BI", "Tableau", "Spark", "Hadoop",
+    "Airflow", "Snowflake", "Databricks",
+    # Robotics & Hardware / Embedded
+    "ROS", "ROS2", "Arduino", "Raspberry Pi", "Embedded Systems", "Microcontrollers", "RTOS", "Verilog",
+    # Soft & Management Skills
+    "Project Management", "Agile", "Scrum", "Jira", "Figma", "SDLC", "System Design",
+    "Team Leadership", "Problem Solving", "Communication"
 ]
+
+CANONICAL_SKILL_MAP = {s.lower(): s for s in COMMON_TECH_SKILLS}
+# Aliases
+CANONICAL_SKILL_MAP.update({
+    "py": "Python",
+    "js": "JavaScript",
+    "ts": "TypeScript",
+    "cpp": "C++",
+    "cnet": "C#",
+    "reactjs": "React",
+    "nextjs": "Next.js",
+    "nodejs": "Node.js",
+    "vuejs": "Vue",
+    "scikit": "Scikit-Learn",
+    "sklearn": "Scikit-Learn",
+    "ml": "Machine Learning",
+    "dl": "Deep Learning",
+    "ai": "Artificial Intelligence",
+    "postgres": "PostgreSQL",
+    "postgresql": "PostgreSQL",
+    "mongo": "MongoDB",
+    "k8s": "Kubernetes",
+    "aws cloud": "AWS",
+    "amazon web services": "AWS",
+    "google cloud": "GCP",
+    "azure cloud": "Azure",
+    "ros 2": "ROS2",
+    "powerbi": "Power BI",
+    "open cv": "OpenCV"
+})
+
 
 
 def classify_document_type(text: str) -> Dict[str, Any]:
@@ -300,14 +352,19 @@ def _extract_name(text: str) -> str:
 
 def _extract_section(text: str, headers: List[str]) -> List[str]:
     """Extract content under a section header until the next section."""
-    section_pattern = r'^\s*(?:' + '|'.join(re.escape(h) for h in headers) + r')\s*[:\-]?\s*$'
+    headers_regex = '|'.join(re.escape(h) for h in headers)
+    section_pattern = r'^\s*(?:' + headers_regex + r')\s*[:\-]?\s*(.*)$'
+    
     all_headers = [
         'education', 'experience', 'work experience', 'professional experience', 'employment history',
-        'skills', 'technical skills', 'core competencies', 'technologies', 'projects', 'certifications',
-        'certificates', 'achievements', 'awards', 'summary', 'professional summary', 'objective', 'profile',
-        'contact', 'references', 'publications', 'languages', 'interests', 'volunteer', 'activities',
+        'skills', 'technical skills', 'core skills', 'key skills', 'skills & competencies', 'technologies',
+        'tools & technologies', 'tech stack', 'programming languages', 'frameworks', 'tools', 'projects',
+        'personal projects', 'key projects', 'certifications', 'certificates', 'achievements', 'awards',
+        'summary', 'professional summary', 'objective', 'profile', 'contact', 'references', 'publications',
+        'languages', 'interests', 'volunteer', 'activities', 'competencies', 'domain expertise'
     ]
-    next_section_pattern = r'^\s*(?:' + '|'.join(re.escape(h) for h in all_headers) + r')\s*[:\-]?\s*$'
+    all_headers_regex = '|'.join(re.escape(h) for h in all_headers)
+    next_section_pattern = r'^\s*(?:' + all_headers_regex + r')\s*[:\-]?\s*$'
     
     lines = text.split('\n')
     capturing = False
@@ -318,8 +375,12 @@ def _extract_section(text: str, headers: List[str]) -> List[str]:
         if not stripped:
             continue
         
-        if re.match(section_pattern, stripped, re.IGNORECASE):
+        m_start = re.match(section_pattern, stripped, re.IGNORECASE)
+        if m_start:
             capturing = True
+            inline_remainder = m_start.group(1).strip()
+            if inline_remainder:
+                captured.append(inline_remainder)
             continue
         
         if capturing and re.match(next_section_pattern, stripped, re.IGNORECASE):
@@ -332,24 +393,43 @@ def _extract_section(text: str, headers: List[str]) -> List[str]:
 
 
 def _extract_skills_from_text(text: str) -> List[str]:
-    """Extract skills from a skills section AND scan raw text for common technical keywords."""
-    section_items = _extract_section(text, ['skills', 'technical skills', 'core competencies', 'technologies', 'tools', 'skills & expertise'])
+    """Extract skills from dedicated skill sections AND scan entire text for canonical controlled vocabulary."""
+    skill_headers = [
+        'skills', 'technical skills', 'core skills', 'key skills', 'skills & competencies',
+        'technical expertise', 'technologies', 'tools & technologies', 'tech stack',
+        'programming languages', 'frameworks', 'tools', 'skills & expertise', 'competencies',
+        'domain expertise', 'expertise', 'technical proficiencies', 'key competencies'
+    ]
+    section_items = _extract_section(text, skill_headers)
     
-    skills = set()
+    found_skills = set()
+
+    # 1. Parse tokens from extracted skills section
     for item in section_items:
-        parts = re.split(r'[,;|•·/\n]', item)
+        cleaned_item = re.sub(r'^\s*(?:[a-zA-Z\s&/]+\s*[:\-])', '', item).strip()
+        parts = re.split(r'[,;|•·/\n]', cleaned_item)
         for part in parts:
-            cleaned = part.strip().strip('-').strip('•').strip()
-            if cleaned and len(cleaned) < 40 and not cleaned.lower().startswith(('skills', 'technical', 'core')):
-                skills.add(cleaned)
+            cleaned = part.strip().strip('-').strip('•').strip('·').strip('*').strip()
+            if not cleaned or len(cleaned) > 40:
+                continue
+            
+            low_cleaned = cleaned.lower()
+            if low_cleaned in CANONICAL_SKILL_MAP:
+                found_skills.add(CANONICAL_SKILL_MAP[low_cleaned])
+            elif len(cleaned) > 1 and not low_cleaned.startswith(('skill', 'technical', 'core', 'competenc', 'proficienc', 'programm', 'language', 'tool', 'framework', 'cloud', 'database')):
+                found_skills.add(cleaned.title())
 
-    # Keyword extraction fallback / enrichment
+    # 2. Comprehensive vocabulary scan across full resume raw text
     for tech in COMMON_TECH_SKILLS:
-        pattern = r'\b' + re.escape(tech) + r'\b'
+        if tech.lower() in ["c++", "c#"]:
+            pattern = re.escape(tech)
+        else:
+            pattern = r'\b' + re.escape(tech) + r'\b'
         if re.search(pattern, text, re.IGNORECASE):
-            skills.add(tech)
+            found_skills.add(CANONICAL_SKILL_MAP.get(tech.lower(), tech))
 
-    return list(skills)
+    return sorted(list(found_skills))
+
 
 
 def assess_extraction_quality(cand: CandidateProfile) -> Dict[str, Any]:
@@ -382,7 +462,11 @@ def assess_extraction_quality(cand: CandidateProfile) -> Dict[str, Any]:
         score += 15
         flags.append("Few skills detected")
     else:
-        flags.append("No explicit skills detected")
+        raw_tech_found = [t for t in COMMON_TECH_SKILLS if re.search(r'\b' + re.escape(t) + r'\b', cand.raw_text, re.IGNORECASE)]
+        if raw_tech_found:
+            flags.append(f"Skill extraction incomplete ({len(raw_tech_found)} potential tech terms detected in text)")
+        else:
+            flags.append("No explicit skills detected")
 
     if cand.experience and len(cand.experience) >= 1:
         score += 25
@@ -403,6 +487,7 @@ def assess_extraction_quality(cand: CandidateProfile) -> Dict[str, Any]:
         "detected_skills_count": len(cand.skills),
         "experience_entries_count": len(cand.experience),
     }
+
 
 
 def parse_resume(file_bytes: bytes) -> Optional[CandidateProfile]:
