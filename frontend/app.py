@@ -289,11 +289,11 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         # If user had demo applications, reset applications for real user
         if any(a.source == "Demo Backup" for a in st.session_state.applications):
             st.session_state.applications = []
-        _persist_state()
-        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} (hash: {file_hash[:8]}...)")
         if switch_step:
             st.session_state.step = "profile"
-            st.rerun()
+        _persist_state()
+        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} (hash: {file_hash[:8]}...)")
+        st.rerun()
         return True
     else:
         logger.warning(f"Resume parsing failed — unparseable PDF (hash: {file_hash[:8]}...)")
