@@ -79,6 +79,7 @@ _defaults = {
     "upload_toast_msg": None,
     "upload_error_msg": None,
     "theme_mode": "light",
+    "is_dark_mode": False,
 }
 
 restored_storage = load_session_state()
@@ -93,218 +94,184 @@ for k, v in _defaults.items():
 def _persist_state():
     save_session_state(dict(st.session_state))
 
-cur_theme = st.session_state.get("theme_mode", "light")
-is_dark_mode = (cur_theme == "dark")
+# 1. Determine theme state from session state safely
+is_dark_mode = st.session_state.get('is_dark_mode', st.session_state.get('theme_mode') == 'dark')
+st.session_state['is_dark_mode'] = is_dark_mode
 
-bg_main = '#090D16' if is_dark_mode else '#F8FAFC'
-bg_card = '#0F172A' if is_dark_mode else '#FFFFFF'
-bg_sidebar = '#0B0F19' if is_dark_mode else '#F8FAFC'
-border_color = '#1E293B' if is_dark_mode else '#E2E8F0'
-text_color = '#F3F4F6' if is_dark_mode else '#0F172A'
+# 2. Dynamic color tokens that switch on button toggle
+bg_main       = '#090D16' if is_dark_mode else '#F8FAFC'
+bg_card       = '#0F172A' if is_dark_mode else '#FFFFFF'
+text_color    = '#F3F4F6' if is_dark_mode else '#0F172A'
 subtext_color = '#9CA3AF' if is_dark_mode else '#64748B'
-bg_input = '#1E293B' if is_dark_mode else '#FFFFFF'
-border_input = '#334155' if is_dark_mode else '#CBD5E1'
+border_color  = '#1E293B' if is_dark_mode else '#E2E8F0'
+bg_sidebar    = '#0B0F19' if is_dark_mode else '#F8FAFC'
+bg_input      = '#1E293B' if is_dark_mode else '#FFFFFF'
+border_input  = '#334155' if is_dark_mode else '#CBD5E1'
 
-# Enterprise Theme Tokens (Exact Specification)
+# 3. Inject the dynamic CSS block
 theme_css = f"""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-.stApp {{
-    background-color: {bg_main} !important;
-    font-family: 'Inter', -apple-system, sans-serif;
-    color: {text_color} !important;
-}}
+    /* Main background canvas */
+    .stApp {{
+        background-color: {bg_main} !important;
+        font-family: 'Inter', -apple-system, sans-serif;
+        color: {text_color} !important;
+    }}
 
-/* Sidebar Base Styling */
-[data-testid="stSidebar"] {{
-    background-color: {bg_sidebar} !important;
-    border-right: 1px solid {border_color} !important;
-}}
+    /* Custom cards background and text */
+    .dash-card, .metric-box, .top-bar-container {{
+        background-color: {bg_card} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 8px;
+        padding: 16px;
+    }}
 
-/* Hide native radio buttons in sidebar */
-[data-testid="stSidebar"] div[role="radiogroup"] {{
-    display: none !important;
-}}
+    /* Force text visibility inside cards */
+    p, span, h1, h2, h3, h4, label {{
+        color: {text_color} !important;
+    }}
 
-/* Sidebar Custom Buttons */
-[data-testid="stSidebar"] button {{
-    text-align: left !important;
-    justify-content: flex-start !important;
-    border: none !important;
-    border-radius: 0.5rem !important;
-    padding: 0.55rem 0.85rem !important;
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
-    color: {subtext_color} !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    margin-bottom: 0.15rem !important;
-    transition: all 0.15s ease-in-out !important;
-}}
+    /* Sidebar Base Styling */
+    [data-testid="stSidebar"] {{
+        background-color: {bg_sidebar} !important;
+        border-right: 1px solid {border_color} !important;
+    }}
 
-[data-testid="stSidebar"] button:hover {{
-    color: #FFFFFF !important;
-    background-color: {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
-}}
+    /* Hide native radio buttons in sidebar */
+    [data-testid="stSidebar"] div[role="radiogroup"] {{
+        display: none !important;
+    }}
 
-/* Active Nav Item Styling */
-[data-testid="stSidebar"] button[kind="primary"],
-[data-testid="stSidebar"] button[data-testid="baseButton-primary"] {{
-    background: {'linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)' if is_dark_mode else '#2563EB'} !important;
-    color: #FFFFFF !important;
-    font-weight: 700 !important;
-    border-left: 4px solid {'#818CF8' if is_dark_mode else '#60A5FA'} !important;
-}}
+    /* Sidebar Custom Buttons */
+    [data-testid="stSidebar"] button {{
+        text-align: left !important;
+        justify-content: flex-start !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+        padding: 0.55rem 0.85rem !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        color: {subtext_color} !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        margin-bottom: 0.15rem !important;
+        transition: all 0.15s ease-in-out !important;
+    }}
 
-.sidebar-brand {{
-    font-size: 1.25rem; font-weight: 800; color: {text_color} !important;
-    display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
-}}
-.sidebar-sub {{
-    font-size: 0.72rem; color: {subtext_color} !important; margin-bottom: 0.85rem; font-weight: 500;
-}}
-.sidebar-cat {{
-    font-size: 0.68rem; font-weight: 700; color: {subtext_color} !important;
-    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
-}}
+    [data-testid="stSidebar"] button:hover {{
+        color: #FFFFFF !important;
+        background-color: {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
+    }}
 
-/* Header Bar & Global Clean Overrides */
-header {{visibility: hidden;}}
-#MainMenu {{visibility: hidden;}}
-footer {{visibility: hidden;}}
-.stDeployButton {{display: none;}}
+    /* Active Nav Item Styling */
+    [data-testid="stSidebar"] button[kind="primary"],
+    [data-testid="stSidebar"] button[data-testid="baseButton-primary"] {{
+        background: {'linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)' if is_dark_mode else '#2563EB'} !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border-left: 4px solid {'#818CF8' if is_dark_mode else '#60A5FA'} !important;
+    }}
 
-.top-bar-container {{
-    background-color: {bg_card} !important;
-    color: {text_color} !important;
-    border: 1px solid {border_color};
-    padding: 1rem 1.5rem; display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 1.25rem;
-    border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}}
-.greeting-title {{
-    font-size: 1.35rem; font-weight: 800; color: {text_color} !important; margin: 0; line-height: 1.2;
-}}
-.greeting-sub {{
-    font-size: 0.85rem; color: {subtext_color} !important; margin: 0; font-weight: 500;
-}}
-.status-pill {{
-    padding: 0.25rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600;
-    display: inline-flex; align-items: center; gap: 0.35rem;
-}}
-.pill-live {{ background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }}
-.pill-demo {{ background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }}
-.pill-empty {{ background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }}
+    .sidebar-brand {{
+        font-size: 1.25rem; font-weight: 800; color: {text_color} !important;
+        display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
+    }}
+    .sidebar-sub {{
+        font-size: 0.72rem; color: {subtext_color} !important; margin-bottom: 0.85rem; font-weight: 500;
+    }}
+    .sidebar-cat {{
+        font-size: 0.68rem; font-weight: 700; color: {subtext_color} !important;
+        text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
+    }}
 
-/* Dashboard Cards & Containers */
-.dash-card {{
-    background-color: {bg_card} !important;
-    color: {text_color} !important;
-    border: 1px solid {border_color}; border-radius: 0.75rem;
-    padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-}}
-.dash-card-hdr {{
-    font-size: 1.05rem; font-weight: 700; color: {text_color} !important; margin-bottom: 0.25rem;
-    display: flex; align-items: center; justify-content: space-between;
-}}
-.dash-card-sub {{ font-size: 0.82rem; color: {subtext_color} !important; margin-bottom: 0.85rem; }}
+    /* Header Bar & Global Clean Overrides */
+    header {{visibility: hidden;}}
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .stDeployButton {{display: none;}}
 
-/* Metric Cards */
-.metric-box {{
-    background-color: {bg_card} !important;
-    color: {text_color} !important;
-    border: 1px solid {border_color}; border-radius: 0.75rem;
-    padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01);
-}}
-.metric-val {{
-    font-size: 1.8rem; font-weight: 800; color: {'#818CF8' if is_dark_mode else '#2563EB'}; line-height: 1.1;
-}}
-.metric-lbl {{
-    font-size: 0.72rem; font-weight: 600; color: {subtext_color} !important; text-transform: uppercase;
-    letter-spacing: 0.05em; margin-top: 0.25rem;
-}}
+    .greeting-title {{
+        font-size: 1.35rem; font-weight: 800; color: {text_color} !important; margin: 0; line-height: 1.2;
+    }}
+    .greeting-sub {{
+        font-size: 0.85rem; color: {subtext_color} !important; margin: 0; font-weight: 500;
+    }}
+    .dash-card-hdr {{
+        font-size: 1.05rem; font-weight: 700; color: {text_color} !important; margin-bottom: 0.25rem;
+        display: flex; align-items: center; justify-content: space-between;
+    }}
+    .dash-card-sub {{ font-size: 0.82rem; color: {subtext_color} !important; margin-bottom: 0.85rem; }}
 
-/* Form Controls & Inputs */
-label, .stTextInput label, .stSelectbox label, .stNumberInput label, .stTextArea label {{
-    color: {text_color} !important;
-}}
+    .metric-val {{
+        font-size: 1.8rem; font-weight: 800; color: {'#818CF8' if is_dark_mode else '#2563EB'} !important; line-height: 1.1;
+    }}
+    .metric-lbl {{
+        font-size: 0.72rem; font-weight: 600; color: {subtext_color} !important; text-transform: uppercase;
+        letter-spacing: 0.05em; margin-top: 0.25rem;
+    }}
 
-input, textarea, select {{
-    background-color: {bg_input} !important;
-    color: {text_color} !important;
-    border: 1px solid {border_input} !important;
-}}
+    /* Inputs & Controls */
+    input, textarea, select {{
+        background-color: {bg_input} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_input} !important;
+    }}
 
-div[data-testid="stExpander"] summary * {{
-    color: {text_color} !important;
-}}
+    div[data-testid="stExpander"] summary * {{
+        color: {text_color} !important;
+    }}
 
-div[data-testid="stExpander"] {{
-    background-color: {bg_card} !important;
-    border: 1px solid {border_color} !important;
-    border-radius: 0.5rem !important;
-}}
+    div[data-testid="stExpander"] {{
+        background-color: {bg_card} !important;
+        border: 1px solid {border_color} !important;
+        border-radius: 0.5rem !important;
+    }}
 
-/* Badges */
-.source-badge-live {{
-    background: #DCFCE7; color: #166534; font-size: 0.7rem; font-weight: 700;
-    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
-}}
-.source-badge-demo {{
-    background: #FEF3C7; color: #92400E; font-size: 0.7rem; font-weight: 700;
-    padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase;
-}}
-.warn-card {{
-    background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 0.5rem;
-    padding: 0.85rem; margin-bottom: 1rem; color: #92400E; font-size: 0.85rem;
-}}
+    /* Badges & Tags Override High Specificity */
+    .status-pill {{ padding: 0.25rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.35rem; }}
+    .pill-live {{ background: #ECFDF5 !important; color: #047857 !important; border: 1px solid #A7F3D0 !important; }}
+    .pill-demo {{ background: #FFFBEB !important; color: #B45309 !important; border: 1px solid #FDE68A !important; }}
+    .pill-empty {{ background: #F1F5F9 !important; color: #64748B !important; border: 1px solid #CBD5E1 !important; }}
 
-/* Skill Tags */
-.tag-v {{ background: #ECFDF5; color: #047857; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
-.tag-i {{ background: #FFFBEB; color: #B45309; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
-.tag-m {{ background: #FEF2F2; color: #B91C1C; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+    .source-badge-live {{ background: #DCFCE7 !important; color: #166534 !important; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase; }}
+    .source-badge-demo {{ background: #FEF3C7 !important; color: #92400E !important; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase; }}
+    .warn-card {{ background: #FFFBEB !important; border: 1px solid #FDE68A !important; border-radius: 0.5rem; padding: 0.85rem; margin-bottom: 1rem; color: #92400E !important; font-size: 0.85rem; }}
 
-/* Alert Box Styling */
-div[data-testid="stAlert"] {{
-    background-color: {bg_input} !important;
-    border: 1px solid {'#3B82F6' if is_dark_mode else '#BFDBFE'} !important;
-    border-radius: 0.5rem !important;
-    color: {text_color} !important;
-}}
+    .tag-v {{ background: #ECFDF5 !important; color: #047857 !important; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+    .tag-i {{ background: #FFFBEB !important; color: #B45309 !important; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
+    .tag-m {{ background: #FEF2F2 !important; color: #B91C1C !important; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
 
-/* File Uploader Dropzone Styling */
-[data-testid="stFileUploaderDropzone"] {{
-    background-color: {bg_input} !important;
-    border: 1px dashed {'#475569' if is_dark_mode else '#CBD5E1'} !important;
-    border-radius: 0.5rem !important;
-}}
+    div[data-testid="stAlert"] {{
+        background-color: {bg_input} !important;
+        border: 1px solid {'#3B82F6' if is_dark_mode else '#BFDBFE'} !important;
+        border-radius: 0.5rem !important;
+    }}
 
-/* Main Page Secondary Buttons */
-.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"],
-.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) {{
-    background-color: {bg_input} !important;
-    color: {text_color} !important;
-    border: 1px solid {border_input} !important;
-    font-weight: 600 !important;
-}}
+    [data-testid="stFileUploaderDropzone"] {{
+        background-color: {bg_input} !important;
+        border: 1px dashed {'#475569' if is_dark_mode else '#CBD5E1'} !important;
+        border-radius: 0.5rem !important;
+    }}
 
-.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover,
-.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
-    background-color: {'#334155' if is_dark_mode else '#F1F5F9'} !important;
-    color: {'#FFFFFF' if is_dark_mode else '#2563EB'} !important;
-}}
+    .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"],
+    .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) {{
+        background-color: {bg_input} !important;
+        color: {text_color} !important;
+        border: 1px solid {border_input} !important;
+        font-weight: 600 !important;
+    }}
+
+    .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover,
+    .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
+        background-color: {'#334155' if is_dark_mode else '#F1F5F9'} !important;
+        color: {'#FFFFFF' if is_dark_mode else '#2563EB'} !important;
+    }}
 </style>
 """
-st.markdown("""
-<style>
-    /* Safe Theme-Aware Custom Cards */
-    .dash-card, .metric-box, .top-bar-container {
-        background-color: var(--secondary-background-color) !important;
-        color: var(--text-color) !important;
-    }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(theme_css, unsafe_allow_html=True)
 
 
 # Explicit Demo Profile Loader
@@ -503,12 +470,14 @@ with st.sidebar:
     with t1:
         if st.button("🌙 Dark", key="t_btn_dark", type="primary" if is_dark_mode else "secondary", use_container_width=True):
             if not is_dark_mode:
+                st.session_state.is_dark_mode = True
                 st.session_state.theme_mode = "dark"
                 _persist_state()
                 st.rerun()
     with t2:
         if st.button("☀️ Light", key="t_btn_light", type="primary" if not is_dark_mode else "secondary", use_container_width=True):
             if is_dark_mode:
+                st.session_state.is_dark_mode = False
                 st.session_state.theme_mode = "light"
                 _persist_state()
                 st.rerun()
