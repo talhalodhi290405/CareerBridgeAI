@@ -95,30 +95,30 @@ def _persist_state():
 cur_theme = st.session_state.get("theme_mode", "light")
 is_dark_mode = (cur_theme == "dark")
 
+bg_main = '#090D16' if is_dark_mode else '#F8FAFC'
+bg_card = '#0F172A' if is_dark_mode else '#FFFFFF'
+bg_sidebar = '#0B0F19' if is_dark_mode else '#F8FAFC'
+border_color = '#1E293B' if is_dark_mode else '#E2E8F0'
+text_color = '#F3F4F6' if is_dark_mode else '#0F172A'
+subtext_color = '#9CA3AF' if is_dark_mode else '#64748B'
+bg_input = '#1E293B' if is_dark_mode else '#FFFFFF'
+border_input = '#334155' if is_dark_mode else '#CBD5E1'
+
 # Enterprise Theme Tokens (Exact Specification)
 theme_css = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-:root {{
-    --bg-main: {'#090D16' if is_dark_mode else '#F8FAFC'};
-    --card-surface: {'#0F172A' if is_dark_mode else '#FFFFFF'};
-    --border-color: {'#1E293B' if is_dark_mode else '#E2E8F0'};
-    --text-primary: {'#F3F4F6' if is_dark_mode else '#1E293B'};
-    --text-secondary: {'#9CA3AF' if is_dark_mode else '#64748B'};
-    --brand-blue: #2563EB;
-    --success-green: #10B981;
-}}
-
 .stApp {{
-    background-color: var(--background-color) !important;
+    background-color: {bg_main} !important;
     font-family: 'Inter', -apple-system, sans-serif;
+    color: {text_color} !important;
 }}
 
 /* Sidebar Base Styling */
 [data-testid="stSidebar"] {{
-    background-color: var(--secondary-background-color) !important;
-    border-right: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
+    background-color: {bg_sidebar} !important;
+    border-right: 1px solid {border_color} !important;
 }}
 
 /* Hide native radio buttons in sidebar */
@@ -135,8 +135,7 @@ theme_css = f"""
     padding: 0.55rem 0.85rem !important;
     font-size: 0.88rem !important;
     font-weight: 500 !important;
-    color: var(--text-color) !important;
-    opacity: 0.8;
+    color: {subtext_color} !important;
     background-color: transparent !important;
     box-shadow: none !important;
     margin-bottom: 0.15rem !important;
@@ -146,7 +145,6 @@ theme_css = f"""
 [data-testid="stSidebar"] button:hover {{
     color: #FFFFFF !important;
     background-color: {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
-    opacity: 1.0;
 }}
 
 /* Active Nav Item Styling */
@@ -156,18 +154,17 @@ theme_css = f"""
     color: #FFFFFF !important;
     font-weight: 700 !important;
     border-left: 4px solid {'#818CF8' if is_dark_mode else '#60A5FA'} !important;
-    opacity: 1.0 !important;
 }}
 
 .sidebar-brand {{
-    font-size: 1.25rem; font-weight: 800; color: var(--text-color) !important;
+    font-size: 1.25rem; font-weight: 800; color: {text_color} !important;
     display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0 0.25rem 0;
 }}
 .sidebar-sub {{
-    font-size: 0.72rem; color: var(--text-color) !important; opacity: 0.75; margin-bottom: 0.85rem; font-weight: 500;
+    font-size: 0.72rem; color: {subtext_color} !important; margin-bottom: 0.85rem; font-weight: 500;
 }}
 .sidebar-cat {{
-    font-size: 0.68rem; font-weight: 700; color: var(--text-color) !important; opacity: 0.75;
+    font-size: 0.68rem; font-weight: 700; color: {subtext_color} !important;
     text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.85rem; margin-bottom: 0.35rem;
 }}
 
@@ -178,18 +175,18 @@ footer {{visibility: hidden;}}
 .stDeployButton {{display: none;}}
 
 .top-bar-container {{
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'};
+    background-color: {bg_card} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color};
     padding: 1rem 1.5rem; display: flex; align-items: center;
     justify-content: space-between; margin-bottom: 1.25rem;
     border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }}
 .greeting-title {{
-    font-size: 1.35rem; font-weight: 800; color: var(--text-color) !important; margin: 0; line-height: 1.2;
+    font-size: 1.35rem; font-weight: 800; color: {text_color} !important; margin: 0; line-height: 1.2;
 }}
 .greeting-sub {{
-    font-size: 0.85rem; color: var(--text-color) !important; opacity: 0.8; margin: 0; font-weight: 500;
+    font-size: 0.85rem; color: {subtext_color} !important; margin: 0; font-weight: 500;
 }}
 .status-pill {{
     padding: 0.25rem 0.65rem; border-radius: 2rem; font-size: 0.72rem; font-weight: 600;
@@ -199,32 +196,53 @@ footer {{visibility: hidden;}}
 .pill-demo {{ background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }}
 .pill-empty {{ background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }}
 
-/* Dashboard Cards & Containers (Using Streamlit Native Theme Variables) */
+/* Dashboard Cards & Containers */
 .dash-card {{
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    background-color: {bg_card} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color}; border-radius: 0.75rem;
     padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }}
 .dash-card-hdr {{
-    font-size: 1.05rem; font-weight: 700; color: var(--text-color) !important; margin-bottom: 0.25rem;
+    font-size: 1.05rem; font-weight: 700; color: {text_color} !important; margin-bottom: 0.25rem;
     display: flex; align-items: center; justify-content: space-between;
 }}
-.dash-card-sub {{ font-size: 0.82rem; color: var(--text-color) !important; opacity: 0.8; margin-bottom: 0.85rem; }}
+.dash-card-sub {{ font-size: 0.82rem; color: {subtext_color} !important; margin-bottom: 0.85rem; }}
 
-/* Metric Cards (Using Streamlit Native Theme Variables) */
+/* Metric Cards */
 .metric-box {{
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid {'#1E293B' if is_dark_mode else '#E2E8F0'}; border-radius: 0.75rem;
+    background-color: {bg_card} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_color}; border-radius: 0.75rem;
     padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.01);
 }}
 .metric-val {{
     font-size: 1.8rem; font-weight: 800; color: {'#818CF8' if is_dark_mode else '#2563EB'}; line-height: 1.1;
 }}
 .metric-lbl {{
-    font-size: 0.72rem; font-weight: 600; color: var(--text-color) !important; opacity: 0.8; text-transform: uppercase;
+    font-size: 0.72rem; font-weight: 600; color: {subtext_color} !important; text-transform: uppercase;
     letter-spacing: 0.05em; margin-top: 0.25rem;
+}}
+
+/* Form Controls & Inputs */
+label, .stTextInput label, .stSelectbox label, .stNumberInput label, .stTextArea label {{
+    color: {text_color} !important;
+}}
+
+input, textarea, select {{
+    background-color: {bg_input} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_input} !important;
+}}
+
+div[data-testid="stExpander"] summary * {{
+    color: {text_color} !important;
+}}
+
+div[data-testid="stExpander"] {{
+    background-color: {bg_card} !important;
+    border: 1px solid {border_color} !important;
+    border-radius: 0.5rem !important;
 }}
 
 /* Badges */
@@ -248,14 +266,15 @@ footer {{visibility: hidden;}}
 
 /* Alert Box Styling */
 div[data-testid="stAlert"] {{
-    background-color: var(--secondary-background-color) !important;
+    background-color: {bg_input} !important;
     border: 1px solid {'#3B82F6' if is_dark_mode else '#BFDBFE'} !important;
     border-radius: 0.5rem !important;
+    color: {text_color} !important;
 }}
 
 /* File Uploader Dropzone Styling */
 [data-testid="stFileUploaderDropzone"] {{
-    background-color: var(--secondary-background-color) !important;
+    background-color: {bg_input} !important;
     border: 1px dashed {'#475569' if is_dark_mode else '#CBD5E1'} !important;
     border-radius: 0.5rem !important;
 }}
@@ -263,16 +282,16 @@ div[data-testid="stAlert"] {{
 /* Main Page Secondary Buttons */
 .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"],
 .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) {{
-    background-color: var(--secondary-background-color) !important;
-    color: var(--text-color) !important;
-    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'};
-    font-weight: 600;
+    background-color: {bg_input} !important;
+    color: {text_color} !important;
+    border: 1px solid {border_input} !important;
+    font-weight: 600 !important;
 }}
 
 .stApp div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover,
 .stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
-    background-color: {'#334155' if is_dark_mode else '#F1F5F9'};
-    color: {'#FFFFFF' if is_dark_mode else '#2563EB'};
+    background-color: {'#334155' if is_dark_mode else '#F1F5F9'} !important;
+    color: {'#FFFFFF' if is_dark_mode else '#2563EB'} !important;
 }}
 </style>
 """
@@ -959,11 +978,11 @@ with main_canvas:
 
         # Initial Clean Empty State when no jobs searched yet
         if not st.session_state.job_results:
-            st.markdown("""
+            st.markdown(f"""
             <div class="dash-card" style="text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;margin-bottom:0.5rem;">🔍</div>
-                <div style="font-size:1.1rem;font-weight:700;color:var(--text-color) !important;">Search Live Opportunities</div>
-                <div style="font-size:0.88rem;color:var(--text-color) !important;opacity:0.85;margin-top:0.25rem;margin-bottom:1.25rem;">
+                <div style="font-size:1.1rem;font-weight:700;color:{text_color};">Search Live Opportunities</div>
+                <div style="font-size:0.88rem;color:{subtext_color};margin-top:0.25rem;margin-bottom:1.25rem;">
                     Enter a target role above and click <strong>Search Live Jobs</strong> to query real-time listings from Jobicy, Remotive, and Adzuna.
                 </div>
             </div>
@@ -1141,11 +1160,11 @@ with main_canvas:
         st.markdown("### 📊 ATS Scanner & Deterministic Breakdown")
 
         if not c_profile or not c_profile.raw_text:
-            st.markdown("""
+            st.markdown(f"""
             <div class="dash-card" style="text-align:center;padding:2rem;">
                 <div style="font-size:2.5rem;margin-bottom:0.5rem;">📄</div>
-                <div style="font-size:1.1rem;font-weight:700;color:var(--text-color) !important;">Candidate Profile Required</div>
-                <div style="font-size:0.88rem;color:var(--text-color) !important;opacity:0.85;margin-top:0.25rem;margin-bottom:1.25rem;">
+                <div style="font-size:1.1rem;font-weight:700;color:{text_color};">Candidate Profile Required</div>
+                <div style="font-size:0.88rem;color:{subtext_color};margin-top:0.25rem;margin-bottom:1.25rem;">
                     Upload a CV or build your profile to evaluate your ATS readiness against target job descriptions.
                 </div>
             </div>
@@ -1184,11 +1203,11 @@ with main_canvas:
             if st.session_state.ats_result is None:
                 st.info("Click **Run Deterministic ATS Check** above to evaluate your CV against the selected job.")
                 sc1, sc2, sc3, sc4, sc5 = st.columns(5)
-                sc1.markdown('<div class="metric-box"><div class="metric-val" style="color:var(--text-color) !important;">—</div><div class="metric-lbl">Overall ATS</div></div>', unsafe_allow_html=True)
-                sc2.markdown('<div class="metric-box"><div class="metric-val" style="color:var(--text-color) !important;">—</div><div class="metric-lbl">Skills Match</div></div>', unsafe_allow_html=True)
-                sc3.markdown('<div class="metric-box"><div class="metric-val" style="color:var(--text-color) !important;">—</div><div class="metric-lbl">Keywords</div></div>', unsafe_allow_html=True)
-                sc4.markdown('<div class="metric-box"><div class="metric-val" style="color:var(--text-color) !important;">—</div><div class="metric-lbl">Experience</div></div>', unsafe_allow_html=True)
-                sc5.markdown('<div class="metric-box"><div class="metric-val" style="color:var(--text-color) !important;">—</div><div class="metric-lbl">Format</div></div>', unsafe_allow_html=True)
+                sc1.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{subtext_color}">—</div><div class="metric-lbl">Overall ATS</div></div>', unsafe_allow_html=True)
+                sc2.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{subtext_color}">—</div><div class="metric-lbl">Skills Match</div></div>', unsafe_allow_html=True)
+                sc3.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{subtext_color}">—</div><div class="metric-lbl">Keywords</div></div>', unsafe_allow_html=True)
+                sc4.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{subtext_color}">—</div><div class="metric-lbl">Experience</div></div>', unsafe_allow_html=True)
+                sc5.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{subtext_color}">—</div><div class="metric-lbl">Format</div></div>', unsafe_allow_html=True)
             else:
                 ats = st.session_state.ats_result
                 gaps = st.session_state.gap_result or analyze_gaps(c_profile, target_job)
@@ -1349,11 +1368,11 @@ with main_canvas:
         apps = st.session_state.applications
 
         if not apps:
-            st.markdown("""
+            st.markdown(f"""
             <div class="dash-card" style="text-align:center;padding:1.5rem;">
                 <div style="font-size:1.8rem;margin-bottom:0.25rem;">📁</div>
-                <div style="font-size:1rem;font-weight:700;color:var(--text-color) !important;">Your Application Pipeline is Empty</div>
-                <div style="font-size:0.85rem;color:var(--text-color) !important;opacity:0.85;margin-top:0.2rem;margin-bottom:1rem;">
+                <div style="font-size:1rem;font-weight:700;color:{text_color};">Your Application Pipeline is Empty</div>
+                <div style="font-size:0.85rem;color:{subtext_color};margin-top:0.2rem;margin-bottom:1rem;">
                     Save jobs from <strong>Find Jobs</strong> or log an application below to track your candidate pipeline.
                 </div>
             </div>
@@ -1449,11 +1468,11 @@ with main_canvas:
 
         apps = st.session_state.applications
         if not apps:
-            st.markdown("""
+            st.markdown(f"""
             <div class="dash-card" style="text-align:center;padding:2rem;">
                 <div style="font-size:2rem;margin-bottom:0.5rem;">📈</div>
-                <div style="font-size:1.05rem;font-weight:700;color:var(--text-color) !important;">No Application Activity Yet</div>
-                <div style="font-size:0.85rem;color:var(--text-color) !important;opacity:0.85;margin-top:0.25rem;">
+                <div style="font-size:1.05rem;font-weight:700;color:{text_color};">No Application Activity Yet</div>
+                <div style="font-size:0.85rem;color:{subtext_color};margin-top:0.25rem;">
                     Save or log job applications to populate your funnel analytics and conversion rates.
                 </div>
             </div>
