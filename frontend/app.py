@@ -5,6 +5,7 @@ Run with: streamlit run frontend/app.py
 """
 import sys
 import os
+import hashlib
 from datetime import datetime
 
 # Ensure project root is on path for backend imports
@@ -176,6 +177,7 @@ _defaults = {
     "step": "intake",
     "candidate": None,
     "is_demo": True,
+    "processed_resume_hash": None,  # SHA-256 hash guard to prevent duplicate parsing loops
     "selected_job": None,
     "saved_jobs": [],
     "applications": [],
@@ -230,6 +232,50 @@ if not st.session_state.applications and st.session_state.is_demo:
 # Helper to save state
 def _persist_state():
     save_session_state(dict(st.session_state))
+
+
+# ---------------------------------------------------------------------------
+# Upload Processing Guard (Prevents Infinite Parse / Rerun Loops)
+# ---------------------------------------------------------------------------
+def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
+    """Safely process a PDF file upload using SHA-256 hash guard.
+    Returns True if a NEW file was parsed in this frame, False otherwise."""
+    if uploaded_file is None:
+        return False
+
+    file_bytes = uploaded_file.getvalue()
+    file_hash = hashlib.sha256(file_bytes).hexdigest()
+
+    # Check if this exact file was already processed in session state
+    if file_hash == st.session_state.get("processed_resume_hash"):
+        return False  # Already processed! Do not re-parse or rerun.
+
+    logger.info(f"Resume upload detected — parsing started (hash: {file_hash[:8]}...)")
+    with st.spinner("Parsing your resume..."):
+        cand = parse_resume(file_bytes)
+
+    # Store hash immediately to prevent duplicate runs
+    st.session_state.processed_resume_hash = file_hash
+
+    if cand and cand.raw_text:
+        st.session_state.candidate = cand
+        st.session_state.is_demo = False
+        # Clear cached ATS & optimization results for new candidate
+        st.session_state.ats_result = None
+        st.session_state.gap_result = None
+        st.session_state.optimization = None
+        st.session_state.outreach = None
+        _persist_state()
+        logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} (hash: {file_hash[:8]}...)")
+        if switch_step:
+            st.session_state.step = "profile"
+            st.rerun()
+        return True
+    else:
+        logger.warning(f"Resume parsing failed — unparseable PDF (hash: {file_hash[:8]}...)")
+        st.error("Could not extract text from this PDF. Please try a different file.")
+        return False
+
 
 # ---------------------------------------------------------------------------
 # Sidebar Navigation (Core Tools + Workflow)
@@ -320,21 +366,13 @@ if st.session_state.nav_section == "Dashboard":
         with ic1:
             uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"], key="dash_cv_intake", label_visibility="collapsed")
             if uploaded_file is not None:
-                with st.spinner("Parsing CV and extracting technical evidence..."):
-                    parsed_cand = parse_resume(uploaded_file.getvalue())
-                if parsed_cand and parsed_cand.raw_text:
-                    st.session_state.candidate = parsed_cand
-                    st.session_state.is_demo = False
-                    _persist_state()
-                    st.success("CV uploaded and profile updated!")
-                    st.rerun()
-                else:
-                    st.error("Could not extract text from this PDF. Try another file.")
+                _process_resume_upload(uploaded_file, switch_step=False)
 
         with ic2:
             if st.button("🎯 Use Demo Profile (Alex Chen)", use_container_width=True, key="dash_use_demo"):
                 st.session_state.candidate = get_demo_candidate()
                 st.session_state.is_demo = True
+                st.session_state.processed_resume_hash = None
                 _persist_state()
                 st.rerun()
 
@@ -372,7 +410,6 @@ if st.session_state.nav_section == "Dashboard":
 
     # Embedded Chat Box
     with st.container(border=True):
-        # Display latest conversation turn if present
         if st.session_state.coach_history:
             latest_turns = st.session_state.coach_history[-4:]
             for msg in latest_turns:
@@ -384,7 +421,6 @@ if st.session_state.nav_section == "Dashboard":
         else:
             st.info(f"Hello **{c_profile.name or 'Candidate'}**! I am your AI Career Coach. Click a chip above or type below to analyze your profile.")
 
-        # Text input & submit button
         coach_query = st.text_input("Ask CareerBridge anything...", key="dash_coach_input", value=selected_chip if selected_chip else "")
         if st.button("Send to Coach →", type="primary", use_container_width=True, key="dash_coach_send") or selected_chip:
             if coach_query.strip():
@@ -595,18 +631,12 @@ elif st.session_state.nav_section == "My CV":
         st.markdown("#### Upload PDF Resume")
         uploaded = st.file_uploader("Choose PDF File", type=["pdf"], key="my_cv_upload")
         if uploaded is not None:
-            with st.spinner("Extracting structured profile data..."):
-                cand = parse_resume(uploaded.getvalue())
-            if cand and cand.raw_text:
-                st.session_state.candidate = cand
-                st.session_state.is_demo = False
-                _persist_state()
-                st.success("Resume processed and saved!")
-                st.rerun()
+            _process_resume_upload(uploaded, switch_step=False)
 
         if st.button("🎯 Load Demo Profile (Alex Chen)", use_container_width=True, key="my_cv_demo"):
             st.session_state.candidate = get_demo_candidate()
             st.session_state.is_demo = True
+            st.session_state.processed_resume_hash = None
             _persist_state()
             st.rerun()
 
@@ -914,15 +944,12 @@ elif st.session_state.nav_section == "Guided Golden Path":
         st.markdown("#### Step 1: Resume Intake")
         uploaded = st.file_uploader("Upload PDF Resume", type=["pdf"], key="gp_pdf_2")
         if uploaded is not None:
-            cand = parse_resume(uploaded.getvalue())
-            if cand and cand.raw_text:
-                st.session_state.candidate = cand
-                st.session_state.is_demo = False
-                st.session_state.step = "profile"
-                st.rerun()
+            _process_resume_upload(uploaded, switch_step=True)
+            
         if st.button("🎯 Load Demo Profile", use_container_width=True):
             st.session_state.candidate = get_demo_candidate()
             st.session_state.is_demo = True
+            st.session_state.processed_resume_hash = None
             st.session_state.step = "profile"
             st.rerun()
 
