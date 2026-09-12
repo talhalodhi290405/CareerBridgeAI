@@ -1,1 +1,42 @@
-[]
+[
+  {
+    "id": "job_1",
+    "title": "Senior Python Engineer",
+    "company": "TechFlow AI",
+    "location": "Remote",
+    "type": "Full-time",
+    "description": "Looking for a Senior Python Engineer with expertise in FastAPI, LangGraph, and ChromaDB. Must have experience building agentic AI workflows and deploying to AWS. 5+ years of experience required."
+  },
+  {
+    "id": "job_2",
+    "title": "Frontend Developer (React)",
+    "company": "WebScale",
+    "location": "Onsite - New York",
+    "type": "Full-time",
+    "description": "Experienced React developer needed to build high-performance dashboards. Skills: TypeScript, Tailwind CSS, Next.js. Experience with AI-powered UIs is a plus."
+  },
+  {
+    "id": "job_3",
+    "title": "AI Research Intern",
+    "company": "NeuralMind",
+    "location": "Global",
+    "type": "Internship",
+    "description": "Research intern for LLM optimization and RAG pipelines. Knowledge of PyTorch, HuggingFace, and vector databases required. PhD or Masters in CS preferred."
+  },
+  {
+    "id": "job_4",
+    "title": "Backend Engineer (Node.js)",
+    "company": "DataStream",
+    "location": "Remote",
+    "type": "Full-time",
+    "description": "Looking for a Node.js expert to scale our data ingestion pipeline. Expertise in MongoDB, Redis, and Kafka. Experience with microservices architecture."
+  },
+  {
+    "id": "job_5",
+    "title": "Full Stack Engineer",
+    "company": "CloudNative",
+    "location": "Hybrid - Austin",
+    "type": "Full-time",
+    "description": "Full stack role focusing on Python (FastAPI) and React. Must be comfortable with Docker, Kubernetes, and CI/CD pipelines. Experience with AI agents is highly valued."
+  }
+]

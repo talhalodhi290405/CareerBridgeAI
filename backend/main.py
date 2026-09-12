@@ -4,90 +4,97 @@ import pdfplumber
 from fastapi import FastAPI, UploadFile, File, Body
 import uvicorn
 
-# Import the AI brain we just built
+# Import the AI brain and RAG engine
 from backend.agent_graph import app_graph
+from backend.rag_engine import rag_engine
 
 app = FastAPI(title="CareerBridge AI API")
+
+# Index jobs on startup
+@app.on_event("startup")
+async def startup_event():
+    rag_engine.index_jobs()
 
 @app.get("/")
 def health_check():
     return {"status": "online", "message": "CareerBridge AI Engine is running."}
 
-@app.post("/api/analyze")
-async def analyze_resume(file: UploadFile = File(...)):
-    # 1. Save the uploaded PDF temporarily
-    temp_file_path = f"temp_{file.filename}"
-    with open(temp_file_path, "wb") as f:
-        f.write(await file.read())
+@app.post("/api/match_jobs")
+async def match_jobs(payload: dict = Body(...)):
+    resume_text = payload.get("resume_text", "")
+    role = payload.get("role", "")
+    location = payload.get("location", "")
+    job_type = payload.get("job_type", "")
 
-    # 2. Extract text from the PDF
+    # Create a rich query combining preferences and resume
+    query = f"Role: {role}, Location: {location}, Type: {job_type}. Candidate Experience: {resume_text[:500]}"
+
+    matches = rag_engine.search_jobs(query)
+
+    return {"matches": matches}
+
+@app.post("/api/analyze_full")
+async def analyze_resume_full(payload: dict = Body(...)):
+    file_path = payload.get("file_path")
+    job_id = payload.get("job_id")
+
+    if not file_path or not job_id:
+        return {"error": "Missing file_path or job_id"}
+
+    # 1. Extract text from the PDF
     resume_text = ""
     try:
-        with pdfplumber.open(temp_file_path) as pdf:
+        with pdfplumber.open(file_path) as pdf:
             for page in pdf.pages:
                 text = page.extract_text(layout=True)
                 if text:
                     resume_text += text + "\n"
     except Exception as e:
         return {"error": f"Failed to read PDF: {e}"}
-    finally:
-        # Delete the temp file so we don't clutter your computer
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
 
-    # 3. Load our target Job Description from jobs.json
+    # 2. Load the specific job description from jobs.json
     try:
         with open("data/jobs.json", "r") as f:
             jobs = json.load(f)
-            job_description = json.dumps(jobs[0]) # Grab the first job
+            job = next((j for j in jobs if j["id"] == job_id), None)
+            if not job:
+                return {"error": "Job not found"}
+            job_description = job["description"]
     except Exception:
-        job_description = "Senior Python Engineer requiring FastAPI and Docker."
+        job_description = "General Technical Role"
 
-    # 4. Prepare the initial memory for our AI Agents
+    # 3. Prepare the initial memory
     initial_state = {
         "resume_text": resume_text,
         "job_description": job_description,
         "human_approved": False
     }
 
-    # 5. Run the AI Workflow! (Thread ID is required for LangGraph memory)
-    # In a real app, this thread_id would be unique per user/session
-    config = {"configurable": {"thread_id": "candidate_001"}}
+    config = {"configurable": {"thread_id": f"session_{job_id}"}}
 
-    print(f"🚀 Starting AI Analysis for {file.filename}...")
-
-    # This runs the agents until it hits our Human-in-the-Loop pause
+    # Run until HITL pause
     for event in app_graph.stream(initial_state, config=config):
-        for key, value in event.items():
-            print(f"✅ Finished AI Agent: {key}")
+        pass
 
-    # 6. Fetch the current state (which now contains the AI's JSON answers)
     current_state = app_graph.get_state(config).values
 
     return {
-        "filename": file.filename,
         "ats_results": current_state.get("ats_results", {}),
         "optimizer_results": current_state.get("optimizer_results", {}),
         "status": "Human validation required",
-        "thread_id": "candidate_001"
+        "thread_id": f"session_{job_id}"
     }
 
 @app.post("/api/approve")
 async def approve_candidate(payload: dict = Body(...)):
-    thread_id = payload.get("thread_id", "candidate_001")
+    thread_id = payload.get("thread_id")
     config = {"configurable": {"thread_id": thread_id}}
 
-    print(f"✅ Approving candidate for thread {thread_id}...")
-
-    # Update state to set human_approved = True
     app_graph.update_state(config, {"human_approved": True})
 
-    # Resume the graph from where it left off
     for event in app_graph.stream(None, config=config):
-        for key, value in event.items():
-            print(f"✅ Finished AI Agent: {key}")
+        pass
 
-    # Fetch final state containing outreach results
     final_state = app_graph.get_state(config).values
 
     return {
