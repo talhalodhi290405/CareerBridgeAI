@@ -240,6 +240,46 @@ footer {{visibility: hidden;}}
 .tag-i {{ background: #FFFBEB; color: #B45309; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
 .tag-m {{ background: #FEF2F2; color: #B91C1C; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
 
+/* Fix Streamlit Info / Alert Box Contrast */
+div[data-testid="stAlert"] {{
+    background-color: {'#1E293B' if is_dark_mode else '#EFF6FF'} !important;
+    border: 1px solid {'#3B82F6' if is_dark_mode else '#BFDBFE'} !important;
+    border-radius: 0.5rem !important;
+}}
+div[data-testid="stAlert"] * {{
+    color: {'#FFFFFF' if is_dark_mode else '#1E40AF'} !important;
+}}
+
+/* Fix File Uploader Box & Dropzone Contrast */
+[data-testid="stFileUploaderDropzone"] {{
+    background-color: {'#1E293B' if is_dark_mode else '#F8FAFC'} !important;
+    border: 1px dashed {'#475569' if is_dark_mode else '#CBD5E1'} !important;
+    border-radius: 0.5rem !important;
+}}
+[data-testid="stFileUploaderDropzone"] * {{
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+}}
+[data-testid="stFileUploader"] button {{
+    background-color: {'#334155' if is_dark_mode else '#E2E8F0'} !important;
+    color: {'#FFFFFF' if is_dark_mode else '#0F172A'} !important;
+    border-radius: 0.375rem !important;
+}}
+
+/* Fix Input & Form Controls Contrast */
+input, textarea, select {{
+    background-color: {'#1E293B' if is_dark_mode else '#FFFFFF'} !important;
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'} !important;
+}}
+
+/* Ensure buttons/cards with white or light backgrounds strictly have dark readable text */
+button[style*="background-color: white"],
+button[style*="background-color: #fff"],
+button[style*="background-color: rgb(255, 255, 255)"],
+.dash-card button[kind="secondary"] {{
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+}}
+
 </style>
 """
 st.markdown(theme_css, unsafe_allow_html=True)
