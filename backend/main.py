@@ -5,7 +5,7 @@ from fastapi import FastAPI, UploadFile, File, Body
 import uvicorn
 
 # Import the AI brain and RAG engine
-from backend.agent_graph import app_graph
+from backend.agent_graph import app_graph, llm
 from backend.rag_engine import rag_engine
 
 app = FastAPI(title="CareerBridge AI API")
@@ -18,6 +18,26 @@ async def startup_event():
 @app.get("/")
 def health_check():
     return {"status": "online", "message": "CareerBridge AI Engine is running."}
+
+@app.post("/api/chat")
+async def chat_with_ai(payload: dict = Body(...)):
+    message = payload.get("message", "")
+    history = payload.get("history", [])
+
+    # Basic chat prompt to maintain persona
+    system_prompt = "You are the CareerBridge AI Coach, an expert in career growth, resume optimization, and interview prep. Be encouraging, professional, and highly actionable."
+
+    # Construct the messages for ChatGroq
+    messages = [{"role": "system", "content": system_prompt}]
+    for h in history:
+        messages.append({"role": h["role"], "content": h["content"]})
+    messages.append({"role": "user", "content": message})
+
+    try:
+        response = llm.invoke(messages)
+        return {"response": response.content}
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/api/match_jobs")
 async def match_jobs(payload: dict = Body(...)):
@@ -104,3 +124,4 @@ async def approve_candidate(payload: dict = Body(...)):
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
