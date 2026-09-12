@@ -1,4 +1,4 @@
-"""Resume parser using pdfplumber with structured extraction and intelligent keyword matching."""
+import json
 import re
 import io
 from typing import Optional, List, Dict, Any
@@ -6,7 +6,13 @@ from typing import Optional, List, Dict, Any
 import pdfplumber
 
 from backend.models import CandidateProfile, DocumentValidationResult
-from backend.config import logger
+from backend.config import get_api_key, logger
+
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
+
 
 COMMON_TECH_SKILLS = [
     # Programming Languages
@@ -490,6 +496,52 @@ def assess_extraction_quality(cand: CandidateProfile) -> Dict[str, Any]:
 
 
 
+def _extract_skills_with_llm(raw_text: str) -> List[str]:
+    """Fallback skill extraction mechanism using Groq LLM service when deterministic extraction yields 0 skills."""
+    if not raw_text or not raw_text.strip():
+        return []
+
+    api_key = get_api_key()
+    if api_key and Groq:
+        try:
+            client = Groq(api_key=api_key)
+            prompt = (
+                "Extract all technical skills from this resume text and return them strictly as a JSON list of strings.\n\n"
+                "RESUME TEXT:\n"
+                f"{raw_text[:3500]}\n\n"
+                "Return strictly a valid JSON array of strings, e.g. [\"Python\", \"Docker\", \"AWS\"]. Do not include markdown formatting or commentary."
+            )
+            response = client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": "You are an expert HR resume parser. Extract all technical skills and return strictly as a JSON list of strings."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.1,
+                max_tokens=400,
+            )
+            content = response.choices[0].message.content.strip()
+            if "```" in content:
+                content = re.sub(r'```(?:json)?\s*', '', content).split('```')[0].strip()
+            
+            parsed = json.loads(content)
+            if isinstance(parsed, list):
+                clean_skills = [str(s).strip() for s in parsed if str(s).strip() and len(str(s).strip()) < 40]
+                if clean_skills:
+                    logger.info(f"Groq LLM skill extraction fallback succeeded: {len(clean_skills)} skills extracted.")
+                    return sorted(list(set(clean_skills)))
+        except Exception as e:
+            logger.error(f"Groq LLM skill extraction fallback failed: {e}")
+
+    # Fallback heuristic if LLM is unavailable: return any vocabulary terms present
+    fallback_skills = set()
+    for tech in COMMON_TECH_SKILLS:
+        if re.search(r'\b' + re.escape(tech) + r'\b', raw_text, re.IGNORECASE):
+            fallback_skills.add(tech)
+
+    return sorted(list(fallback_skills))
+
+
 def parse_resume(file_bytes: bytes) -> Optional[CandidateProfile]:
     """Parse a PDF resume into a structured CandidateProfile.
     Returns None if the PDF cannot be read."""
@@ -515,6 +567,10 @@ def parse_resume_text(raw_text: str) -> CandidateProfile:
             summary = " ".join(lines)
 
     skills = _extract_skills_from_text(raw_text)
+    if not skills:
+        logger.info("Deterministic skill extraction returned 0 skills — triggering Groq LLM fallback...")
+        skills = _extract_skills_with_llm(raw_text)
+
     exp = _extract_section(raw_text, ['experience', 'work experience', 'professional experience', 'employment', 'employment history'])
     edu = _extract_section(raw_text, ['education', 'academic background', 'academic'])
     proj = _extract_section(raw_text, ['projects', 'personal projects', 'key projects'])
@@ -534,3 +590,4 @@ def parse_resume_text(raw_text: str) -> CandidateProfile:
         achievements=achieve,
         raw_text=raw_text,
     )
+

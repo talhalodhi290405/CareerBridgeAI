@@ -575,7 +575,20 @@ if st.session_state.nav_section == "Dashboard":
                     _clear_candidate_profile()
                     st.rerun()
 
+            # Prominent Call-to-Action (CTA) Unblocking Flow
+            st.info('Profile loaded. What would you like to do next?')
+            cta_col1, cta_col2 = st.columns(2)
+            with cta_col1:
+                if st.button("🔍 Find Matching Jobs", key="cta_find_jobs", type="primary", use_container_width=True):
+                    st.session_state.nav_section = "Find Jobs"
+                    st.rerun()
+            with cta_col2:
+                if st.button("📊 Run ATS Scanner", key="cta_ats_scanner", type="primary", use_container_width=True):
+                    st.session_state.nav_section = "ATS Scanner"
+                    st.rerun()
+
     st.markdown("---")
+
 
     # -----------------------------------------------------------------------
     # SECTION B: AI CAREER COACH PANEL (STABLE PROMPT QUEUE)
