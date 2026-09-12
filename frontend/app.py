@@ -272,11 +272,28 @@ input, textarea, select {{
     border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'} !important;
 }}
 
-/* Ensure buttons/cards with white or light backgrounds strictly have dark readable text */
-button[style*="background-color: white"],
-button[style*="background-color: #fff"],
-button[style*="background-color: rgb(255, 255, 255)"],
-.dash-card button[kind="secondary"] {{
+/* Fix Main Page Buttons & Cards Contrast (Dark Mode vs Light Mode) */
+.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"],
+.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) {{
+    background-color: {'#1E293B' if is_dark_mode else '#FFFFFF'} !important;
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+    border: 1px solid {'#334155' if is_dark_mode else '#CBD5E1'} !important;
+    font-weight: 600 !important;
+}}
+
+.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"] *,
+.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]) * {{
+    color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
+}}
+
+.stApp div[data-testid="stVerticalBlock"] button[kind="secondary"]:hover,
+.stApp div[data-testid="stVerticalBlock"] button:not([kind="primary"]):hover {{
+    background-color: {'#334155' if is_dark_mode else '#F1F5F9'} !important;
+    color: {'#FFFFFF' if is_dark_mode else '#2563EB'} !important;
+}}
+
+/* Ensure text in containers and white boxes is 100% visible in Light Mode */
+.dash-card, .metric-box, div[data-testid="stForm"] {{
     color: {'#F3F4F6' if is_dark_mode else '#0F172A'} !important;
 }}
 
