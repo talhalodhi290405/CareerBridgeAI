@@ -7,6 +7,7 @@ import sys
 import os
 import hashlib
 from datetime import datetime
+from turtle import width
 from typing import Optional, List, Dict, Any
 
 # Ensure project root is on path for backend imports
@@ -295,7 +296,15 @@ div[data-testid="stAlert"] {{
 }}
 </style>
 """
-st.markdown(theme_css, unsafe_allow_html=True)
+st.markdown("""
+<style>
+    /* Safe Theme-Aware Custom Cards */
+    .dash-card, .metric-box, .top-bar-container {
+        background-color: var(--secondary-background-color) !important;
+        color: var(--text-color) !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 
 # Explicit Demo Profile Loader
