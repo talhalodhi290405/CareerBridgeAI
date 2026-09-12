@@ -231,6 +231,7 @@ _defaults = {
     "job_status_msg": "Ready to search live jobs",
     "demo_mode_active": False,
     "show_manual_intake": False,
+    "upload_toast_msg": None,
 }
 
 restored_storage = load_session_state()
@@ -319,6 +320,7 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
         st.session_state.optimization = None
         st.session_state.outreach = None
         st.session_state.show_manual_intake = False
+        st.session_state.upload_toast_msg = f"CV processed successfully: {cand.name or 'Candidate Profile'}"
         
         if any(a.source == "Demo Backup" for a in st.session_state.applications):
             st.session_state.applications = []
@@ -417,6 +419,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
+# Show Toast Confirmation if uploaded
+if st.session_state.get("upload_toast_msg"):
+    st.success(f"✅ {st.session_state['upload_toast_msg']}")
+    st.session_state["upload_toast_msg"] = None
+
+
 # ===========================================================================
 # SECTION 1: DASHBOARD COMMAND CENTER
 # ===========================================================================
@@ -477,6 +485,7 @@ if st.session_state.nav_section == "Dashboard":
                         st.session_state.is_demo = False
                         st.session_state.search_filters.desired_role = m_role
                         st.session_state.show_manual_intake = False
+                        st.session_state.upload_toast_msg = f"Manual profile saved successfully for {m_name}"
                         _persist_state()
                         st.rerun()
 
@@ -776,7 +785,7 @@ elif st.session_state.nav_section == "Find Jobs":
             src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else f'<span class="source-badge-demo">DEMO MODE — {j.source}</span>'
 
             with st.container(border=True):
-                j1, j2, j3 = st.columns([3, 1.2, 1])
+                j1, j2, j3 = st.columns([3, 1.2, 1.2])
                 with j1:
                     st.markdown(f"#### {j.title}")
                     st.markdown(f"**{j.company}** · 📍 {j.location or 'Not specified'} · {'🌐 Remote' if j.remote else '🏢 On-site'} · {j.employment_type}")
@@ -811,6 +820,16 @@ elif st.session_state.nav_section == "Find Jobs":
                         st.session_state.nav_section = "ATS Scanner"
                         st.rerun()
 
+                    if st.button("✨ Improve CV", key=f"imp_cv_{j.id}", use_container_width=True):
+                        st.session_state.selected_job = j
+                        st.session_state.nav_section = "Improve CV"
+                        st.rerun()
+
+                    if st.button("✉️ Cover Letter", key=f"cl_gen_{j.id}", use_container_width=True):
+                        st.session_state.selected_job = j
+                        st.session_state.nav_section = "Cover Letter"
+                        st.rerun()
+
                     if is_saved:
                         if st.button("★ Unsave", key=f"unsave_{j.id}", use_container_width=True):
                             st.session_state.saved_jobs = [sj for sj in st.session_state.saved_jobs if sj.id != j.id]
@@ -828,6 +847,22 @@ elif st.session_state.nav_section == "Find Jobs":
                                 ))
                             _persist_state()
                             st.rerun()
+
+                    if st.button("📤 Mark Applied", key=f"mark_applied_{j.id}", use_container_width=True):
+                        if not any(sj.id == j.id for sj in st.session_state.saved_jobs):
+                            st.session_state.saved_jobs.append(j)
+                        existing_app = next((a for a in st.session_state.applications if a.job_id == j.id), None)
+                        if existing_app:
+                            existing_app.status = ApplicationStatus.APPLIED
+                        else:
+                            st.session_state.applications.append(ApplicationRecord(
+                                id=f"app_{len(st.session_state.applications)+1}",
+                                job_id=j.id, job_title=j.title, company=j.company,
+                                job_url=j.url, source=j.source, status=ApplicationStatus.APPLIED,
+                                date=str(datetime.now())[:10], match_score=m.overall_score
+                            ))
+                        _persist_state()
+                        st.rerun()
 
                     if j.url:
                         st.markdown(f'<a href="{j.url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:0.3rem;">View Job →</a>', unsafe_allow_html=True)
