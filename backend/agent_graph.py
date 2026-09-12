@@ -17,13 +17,14 @@ llm = ChatGroq(
 )
 
 # Import the prompts we wrote earlier
-from backend.prompts import ATS_EVALUATION_PROMPT, RESUME_OPTIMIZER_PROMPT
+from backend.prompts import ATS_EVALUATION_PROMPT, RESUME_OPTIMIZER_PROMPT, OUTREACH_PROMPT
 
 class AgentState(TypedDict):
     resume_text: str
     job_description: str
     ats_results: Dict[str, Any]
     optimizer_results: Dict[str, Any]
+    outreach_results: Dict[str, Any]
     human_approved: bool
 
 # --- NODE FUNCTIONS (The Real AI Agents) ---
@@ -54,22 +55,42 @@ def run_ats_agent(state: AgentState):
 
 def run_optimizer_agent(state: AgentState):
     print("✍️ Optimizer Agent: Writing resume improvements...")
-    
+
     prompt = PromptTemplate.from_template(RESUME_OPTIMIZER_PROMPT)
     chain = prompt | llm
-    
+
     response = chain.invoke({
         "ats_results": json.dumps(state.get("ats_results", {})),
         "resume_text": state["resume_text"]
     })
-    
+
     try:
         clean_json = response.content.replace('```json', '').replace('```', '').strip()
         results = json.loads(clean_json)
     except:
         results = {"actionable_feedback": "Could not generate feedback."}
-        
+
     return {"optimizer_results": results}
+
+def run_outreach_agent(state: AgentState):
+    print("📧 Outreach Agent: Generating customized outreach materials...")
+
+    prompt = PromptTemplate.from_template(OUTREACH_PROMPT)
+    chain = prompt | llm
+
+    response = chain.invoke({
+        "resume_text": state["resume_text"],
+        "job_description": state["job_description"]
+    })
+
+    try:
+        clean_json = response.content.replace('```json', '').replace('```', '').strip()
+        results = json.loads(clean_json)
+    except Exception as e:
+        print(f"Error parsing Outreach JSON: {e}")
+        results = {"cover_letter": "Error", "recruiter_email": "Error", "interview_questions": []}
+
+    return {"outreach_results": results}
 
 def human_validation_node(state: AgentState):
     print("⏸️ SYSTEM PAUSED: Waiting for human validation...")
@@ -78,7 +99,7 @@ def human_validation_node(state: AgentState):
 # --- GRAPH ROUTING LOGIC ---
 def route_after_human(state: AgentState):
     if state.get("human_approved"):
-        return END
+        return "generate_outreach"
     else:
         return "run_optimizer_agent"
 
@@ -87,11 +108,13 @@ workflow = StateGraph(AgentState)
 workflow.add_node("ats_evaluator", run_ats_agent)
 workflow.add_node("resume_optimizer", run_optimizer_agent)
 workflow.add_node("human_validation", human_validation_node)
+workflow.add_node("generate_outreach", run_outreach_agent)
 
 workflow.set_entry_point("ats_evaluator")
 workflow.add_edge("ats_evaluator", "resume_optimizer")
 workflow.add_edge("resume_optimizer", "human_validation")
 workflow.add_conditional_edges("human_validation", route_after_human)
+workflow.add_edge("generate_outreach", END)
 
 from langgraph.checkpoint.memory import MemorySaver
 memory = MemorySaver()

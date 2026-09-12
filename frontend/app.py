@@ -40,6 +40,7 @@ with col2:
                     data = response.json()
                     ats = data.get("ats_results", {})
                     opt = data.get("optimizer_results", {})
+                    st.session_state.thread_id = data.get("thread_id")
 
                     # 2. Display ATS Results
                     st.metric(
@@ -78,7 +79,16 @@ with col2:
 
                     col_yes, col_no = st.columns(2)
                     with col_yes:
-                        st.button("✅ Approve Match", use_container_width=True)
+                        if st.button("✅ Approve Match", use_container_width=True):
+                            with st.spinner("Generating customized outreach..."):
+                                backend_url = os.environ.get('BACKEND_URL', 'http://localhost:8000')
+                                approx_resp = requests.post(
+                                    f"{backend_url}/api/approve",
+                                    json={"thread_id": st.session_state.get("thread_id")}
+                                )
+                                if approx_resp.status_code == 200:
+                                    st.session_state.outreach_results = approx_resp.json().get("outreach_results", {})
+                                    st.rerun()
                     with col_no:
                         st.button("⛔ Reject Match", use_container_width=True)
 
@@ -87,6 +97,27 @@ with col2:
 
             except requests.exceptions.ConnectionError:
                 st.error("🚨 Could not connect to the backend! Make sure FastAPI is running on port 8000.")
+
+    # --- NEW: Agentic Outreach Display ---
+    if 'outreach_results' in st.session_state and st.session_state.outreach_results:
+        st.divider()
+        st.subheader("🎯 5. Agentic Outreach Generation")
+        results = st.session_state.outreach_results
+
+        with st.expander("📄 Customized Cover Letter", expanded=True):
+            st.write(results.get("cover_letter", "No cover letter generated."))
+
+        with st.expander("📧 Cold Recruiter Email", expanded=True):
+            st.write(results.get("recruiter_email", "No email generated."))
+
+        with st.expander("❓ Technical Interview Questions", expanded=True):
+            questions = results.get("interview_questions", [])
+            if questions:
+                for i, q in enumerate(questions, 1):
+                    st.write(f"**Q{i}:** {q}")
+            else:
+                st.write("No questions generated.")
+
 
     elif not uploaded_file:
         st.info("Upload a resume on the left to see the AI dashboard.")

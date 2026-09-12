@@ -1,7 +1,7 @@
 import os
 import json
 import pdfplumber
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Body
 import uvicorn
 
 # Import the AI brain we just built
@@ -19,7 +19,7 @@ async def analyze_resume(file: UploadFile = File(...)):
     temp_file_path = f"temp_{file.filename}"
     with open(temp_file_path, "wb") as f:
         f.write(await file.read())
-        
+
     # 2. Extract text from the PDF
     resume_text = ""
     try:
@@ -49,12 +49,13 @@ async def analyze_resume(file: UploadFile = File(...)):
         "job_description": job_description,
         "human_approved": False
     }
-    
+
     # 5. Run the AI Workflow! (Thread ID is required for LangGraph memory)
+    # In a real app, this thread_id would be unique per user/session
     config = {"configurable": {"thread_id": "candidate_001"}}
-    
+
     print(f"🚀 Starting AI Analysis for {file.filename}...")
-    
+
     # This runs the agents until it hits our Human-in-the-Loop pause
     for event in app_graph.stream(initial_state, config=config):
         for key, value in event.items():
@@ -67,7 +68,31 @@ async def analyze_resume(file: UploadFile = File(...)):
         "filename": file.filename,
         "ats_results": current_state.get("ats_results", {}),
         "optimizer_results": current_state.get("optimizer_results", {}),
-        "status": "Human validation required"
+        "status": "Human validation required",
+        "thread_id": "candidate_001"
+    }
+
+@app.post("/api/approve")
+async def approve_candidate(payload: dict = Body(...)):
+    thread_id = payload.get("thread_id", "candidate_001")
+    config = {"configurable": {"thread_id": thread_id}}
+
+    print(f"✅ Approving candidate for thread {thread_id}...")
+
+    # Update state to set human_approved = True
+    app_graph.update_state(config, {"human_approved": True})
+
+    # Resume the graph from where it left off
+    for event in app_graph.stream(None, config=config):
+        for key, value in event.items():
+            print(f"✅ Finished AI Agent: {key}")
+
+    # Fetch final state containing outreach results
+    final_state = app_graph.get_state(config).values
+
+    return {
+        "status": "Approved",
+        "outreach_results": final_state.get("outreach_results", {})
     }
 
 if __name__ == "__main__":

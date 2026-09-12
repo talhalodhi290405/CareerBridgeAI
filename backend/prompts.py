@@ -28,8 +28,8 @@ TARGET JOB DESCRIPTION:
 """
 
 RESUME_OPTIMIZER_PROMPT = """
-You are an Expert Resume Writer and Career Coach. 
-The ATS just evaluated a candidate's resume and found several missing skills and weaknesses. 
+You are an Expert Resume Writer and Career Coach.
+The ATS just evaluated a candidate's resume and found several missing skills and weaknesses.
 
 Your job is to provide actionable, specific advice on how the candidate can optimize their resume to match the Job Description perfectly.
 
@@ -49,4 +49,28 @@ ATS EVALUATION RESULTS (The missing gaps):
 
 CANDIDATE RESUME TEXT:
 {{resume_text}}
+"""
+
+OUTREACH_PROMPT = """
+You are a Strategic Career Agent and Outreach Expert.
+The candidate has been approved for a specific role. Your job is to generate highly customized outreach materials that leverage the candidate's strengths to get them an interview.
+
+You MUST return your output STRICTLY as a JSON object.
+
+Here is the format you MUST follow:
+{{
+    "cover_letter": "<A professional, high-conversion cover letter tailored to the job and resume>",
+    "recruiter_email": "<A short, punchy cold email to a recruiter highlighting 2-3 key wins>",
+    "interview_questions": [
+        "<Technical question 1 based on their specific experience and the job requirements>",
+        "<Technical question 2>",
+        "<Technical question 3>"
+    ]
+}}
+
+CANDIDATE RESUME TEXT:
+{{resume_text}}
+
+TARGET JOB DESCRIPTION:
+{{job_description}}
 """
