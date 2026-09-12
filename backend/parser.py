@@ -1,7 +1,7 @@
 """Resume parser using pdfplumber with structured extraction and intelligent keyword matching."""
 import re
 import io
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 import pdfplumber
 
@@ -119,6 +119,59 @@ def _extract_skills_from_text(text: str) -> List[str]:
             skills.add(tech)
 
     return list(skills)
+
+
+def assess_extraction_quality(cand: CandidateProfile) -> Dict[str, Any]:
+    """Calculate profile completeness score and extraction quality warning flags."""
+    if not cand or not cand.raw_text:
+        return {
+            "completeness_score": 0,
+            "is_low_quality": True,
+            "flags": ["No resume loaded"],
+            "detected_skills_count": 0,
+            "experience_entries_count": 0,
+        }
+
+    score = 0
+    flags = []
+    
+    if cand.name and cand.name != "Candidate Profile":
+        score += 15
+    else:
+        flags.append("Name unconfirmed")
+
+    if cand.email:
+        score += 15
+    else:
+        flags.append("Missing email")
+
+    if cand.skills and len(cand.skills) >= 3:
+        score += 30
+    elif cand.skills:
+        score += 15
+        flags.append("Few skills detected")
+    else:
+        flags.append("No explicit skills detected")
+
+    if cand.experience and len(cand.experience) >= 1:
+        score += 25
+    else:
+        flags.append("Experience section sparse")
+
+    if cand.summary and len(cand.summary) > 20:
+        score += 15
+    else:
+        flags.append("Summary sparse")
+
+    is_low_quality = (score < 45) or (len(cand.skills) < 2) or (len(cand.experience) < 1)
+    
+    return {
+        "completeness_score": min(100, score),
+        "is_low_quality": is_low_quality,
+        "flags": flags,
+        "detected_skills_count": len(cand.skills),
+        "experience_entries_count": len(cand.experience),
+    }
 
 
 def parse_resume(file_bytes: bytes) -> Optional[CandidateProfile]:
