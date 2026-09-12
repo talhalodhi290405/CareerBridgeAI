@@ -31,7 +31,7 @@ def save_session_state(state_dict: Dict[str, Any]) -> bool:
         if "coach_history" in state_dict and state_dict["coach_history"]:
             data["coach_history"] = [m.model_dump() for m in state_dict["coach_history"]]
 
-        data["is_demo"] = state_dict.get("is_demo", True)
+        data["is_demo"] = state_dict.get("is_demo", False)
         data["nav_section"] = state_dict.get("nav_section", "Dashboard")
 
         os.makedirs(os.path.dirname(STORAGE_FILE), exist_ok=True)

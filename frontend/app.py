@@ -7,6 +7,7 @@ import sys
 import os
 import hashlib
 from datetime import datetime
+from typing import Optional, List
 
 # Ensure project root is on path for backend imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -119,6 +120,7 @@ footer {visibility: hidden;}
 }
 .pill-live { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
 .pill-demo { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+.pill-empty { background: #F1F5F9; color: #64748B; border: 1px solid #CBD5E1; }
 
 /* Dashboard Cards */
 .dash-card {
@@ -137,10 +139,10 @@ footer {visibility: hidden;}
     padding: 1rem; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 .metric-val {
-    font-size: 2rem; font-weight: 800; color: #2563EB; line-height: 1.1;
+    font-size: 1.8rem; font-weight: 800; color: #2563EB; line-height: 1.1;
 }
 .metric-lbl {
-    font-size: 0.78rem; font-weight: 600; color: #64748B; text-transform: uppercase;
+    font-size: 0.75rem; font-weight: 600; color: #64748B; text-transform: uppercase;
     letter-spacing: 0.04em; margin-top: 0.25rem;
 }
 
@@ -170,13 +172,13 @@ footer {visibility: hidden;}
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Session State Initialization & Local Storage Restore
+# Session State Initialization (Strict Clean Defaults, No Automatic Demo)
 # ---------------------------------------------------------------------------
 _defaults = {
     "nav_section": "Dashboard",
     "step": "intake",
     "candidate": None,
-    "is_demo": True,
+    "is_demo": False,
     "processed_resume_hash": None,  # SHA-256 hash guard to prevent duplicate parsing loops
     "selected_job": None,
     "saved_jobs": [],
@@ -189,7 +191,7 @@ _defaults = {
     "coach_history": [],
     "search_filters": JobSearchFilters(),
     "job_results": [],
-    "job_status_msg": "⚡ DEMO MODE — Offline Dataset",
+    "job_status_msg": "Ready to search live jobs",
     "demo_mode_active": False,
 }
 
@@ -203,14 +205,24 @@ for k, v in _defaults.items():
         else:
             st.session_state[k] = v
 
-# Ensure default candidate if null
-if st.session_state.candidate is None:
+# Helper to save state
+def _persist_state():
+    save_session_state(dict(st.session_state))
+
+# Explicit Demo Profile Loader
+def _load_demo_profile():
     st.session_state.candidate = get_demo_candidate()
     st.session_state.is_demo = True
-
-# Seed sample applications for demo profile if empty
-if not st.session_state.applications and st.session_state.is_demo:
+    st.session_state.processed_resume_hash = None
+    st.session_state.search_filters.desired_role = "Machine Learning Engineer"
+    st.session_state.ats_result = get_demo_ats_analysis()
+    st.session_state.gap_result = get_demo_gap_analysis()
+    st.session_state.optimization = get_demo_optimized_profile()
+    st.session_state.outreach = get_demo_outreach()
     demo_jobs = load_jobs()
+    st.session_state.selected_job = demo_jobs[0]
+    st.session_state.job_results = demo_jobs
+    st.session_state.job_status_msg = "DEMO MODE — Offline Dataset"
     st.session_state.applications = [
         ApplicationRecord(
             id="app_1", job_id=demo_jobs[0].id, job_title=demo_jobs[0].title,
@@ -228,11 +240,20 @@ if not st.session_state.applications and st.session_state.is_demo:
             date="2026-09-12", notes="Saved for ATS optimization", ats_score=None, match_score=61.0
         ),
     ]
+    _persist_state()
 
-# Helper to save state
-def _persist_state():
-    save_session_state(dict(st.session_state))
-
+# Clear Profile Helper
+def _clear_candidate_profile():
+    st.session_state.candidate = None
+    st.session_state.is_demo = False
+    st.session_state.applications = []
+    st.session_state.saved_jobs = []
+    st.session_state.ats_result = None
+    st.session_state.gap_result = None
+    st.session_state.optimization = None
+    st.session_state.outreach = None
+    st.session_state.processed_resume_hash = None
+    _persist_state()
 
 # ---------------------------------------------------------------------------
 # Upload Processing Guard (Prevents Infinite Parse / Rerun Loops)
@@ -260,11 +281,14 @@ def _process_resume_upload(uploaded_file, switch_step=False) -> bool:
     if cand and cand.raw_text:
         st.session_state.candidate = cand
         st.session_state.is_demo = False
-        # Clear cached ATS & optimization results for new candidate
+        # Clear cached demo/previous ATS & optimization results for new candidate
         st.session_state.ats_result = None
         st.session_state.gap_result = None
         st.session_state.optimization = None
         st.session_state.outreach = None
+        # If user had demo applications, reset applications for real user
+        if any(a.source == "Demo Backup" for a in st.session_state.applications):
+            st.session_state.applications = []
         _persist_state()
         logger.info(f"Resume parsing completed successfully for {cand.name or 'Candidate'} (hash: {file_hash[:8]}...)")
         if switch_step:
@@ -312,31 +336,32 @@ with st.sidebar:
     adz_id, _ = get_adzuna_credentials()
     
     st.markdown("**System Status:**")
-    st.markdown(f"- AI: `{'● Live (Groq)' if api_k else '● Demo Mode'}`")
-    st.markdown(f"- Jobs: `{'● Live (API)' if (adz_id or 'LIVE' in st.session_state.job_status_msg) else '● Fallback Provider'}`")
-    st.markdown("- System: `● Ready`")
+    st.markdown(f"- AI Engine: `{'● Live (Groq)' if api_k else '● Fallback Engine'}`")
+    st.markdown(f"- Job APIs: `{'● Live Search Active' if 'LIVE' in st.session_state.job_status_msg else '● Ready for Search'}`")
+    st.markdown(f"- Profile Mode: `{'⚡ Demo Mode' if st.session_state.is_demo else ('🟢 Real Candidate' if st.session_state.candidate else '⚪ New User State')}`")
 
 # ---------------------------------------------------------------------------
 # Top Header Bar & Greeting
 # ---------------------------------------------------------------------------
-c_profile: CandidateProfile = st.session_state.candidate
+c_profile: Optional[CandidateProfile] = st.session_state.candidate
 
 # Time of day greeting
 hour = datetime.now().hour
 time_greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 17 else "Good evening"
+user_display_name = c_profile.name if (c_profile and c_profile.name) else "Candidate"
 
 st.markdown(f"""
 <div class="top-bar-container">
     <div>
-        <div class="greeting-title">{time_greeting}, {c_profile.name or 'Candidate'}</div>
+        <div class="greeting-title">{time_greeting}, {user_display_name}</div>
         <div class="greeting-sub">Your AI Career Command Center</div>
     </div>
     <div style="display:flex;align-items:center;gap:0.6rem;">
         <span class="status-pill {'pill-live' if api_k else 'pill-demo'}">
-            {'● Live — Groq' if api_k else '● Demo Mode'}
+            {'● Live — Groq' if api_k else '● Fallback Engine'}
         </span>
-        <span class="status-pill pill-live">
-            {'● Live Jobs' if 'LIVE' in st.session_state.job_status_msg else '● Fallback Provider'}
+        <span class="status-pill {'pill-demo' if st.session_state.is_demo else ('pill-live' if (c_profile and c_profile.raw_text) else 'pill-empty')}">
+            {'⚡ Demo Mode' if st.session_state.is_demo else ('🟢 Candidate Active' if (c_profile and c_profile.raw_text) else '⚪ No CV Loaded')}
         </span>
     </div>
 </div>
@@ -349,36 +374,61 @@ st.markdown(f"""
 if st.session_state.nav_section == "Dashboard":
     
     # -----------------------------------------------------------------------
-    # SECTION A: CV INTAKE PANEL
+    # SECTION A: CV INTAKE & PROFILE STATUS PANEL
     # -----------------------------------------------------------------------
     with st.container():
-        st.markdown("""
-        <div class="dash-card">
-            <div class="dash-card-hdr">
-                <span>📄 Build Your Career Profile</span>
-                <span style="font-size:0.78rem;font-weight:600;color:#2563EB">Intake Active</span>
+        if not c_profile or not c_profile.raw_text:
+            st.markdown("""
+            <div class="dash-card">
+                <div class="dash-card-hdr">
+                    <span>📄 Build Your Career Profile</span>
+                    <span style="font-size:0.78rem;font-weight:600;color:#2563EB">Intake Required</span>
+                </div>
+                <div class="dash-card-sub">Upload your CV (PDF) to unlock personalized job matching, ATS readiness scoring, and AI optimization. Or click Demo Mode to test with sample data.</div>
             </div>
-            <div class="dash-card-sub">Upload your CV to analyze your ATS readiness, discover matching opportunities, and personalize your applications.</div>
-        </div>
-        """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
-        ic1, ic2 = st.columns([2, 1], gap="medium")
-        with ic1:
-            uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"], key="dash_cv_intake", label_visibility="collapsed")
-            if uploaded_file is not None:
-                _process_resume_upload(uploaded_file, switch_step=False)
+            ic1, ic2 = st.columns([2, 1], gap="medium")
+            with ic1:
+                uploaded_file = st.file_uploader("Upload CV (PDF)", type=["pdf"], key="dash_cv_intake", label_visibility="collapsed")
+                if uploaded_file is not None:
+                    _process_resume_upload(uploaded_file, switch_step=False)
 
-        with ic2:
-            if st.button("🎯 Use Demo Profile (Alex Chen)", use_container_width=True, key="dash_use_demo"):
-                st.session_state.candidate = get_demo_candidate()
-                st.session_state.is_demo = True
-                st.session_state.processed_resume_hash = None
-                _persist_state()
-                st.rerun()
+            with ic2:
+                if st.button("🎯 Use Demo Profile (Alex Chen)", use_container_width=True, key="dash_use_demo"):
+                    _load_demo_profile()
+                    st.rerun()
 
-        # Profile status summary pills
-        completeness = min(100, (len(c_profile.skills) * 5) + (len(c_profile.experience) * 15) + (20 if c_profile.summary else 0))
-        st.caption(f"Profile: **{c_profile.name or 'N/A'}** · Completeness: **{completeness}%** · Detected Skills: **{len(c_profile.skills)}** · Status: **{'⚡ Demo Derived' if st.session_state.is_demo else '🟢 Real Candidate Data'}**")
+            st.caption("Status: **⚪ No CV Loaded** — Upload a PDF or click **Use Demo Profile** to get started.")
+
+        else:
+            completeness = min(100, (len(c_profile.skills) * 5) + (len(c_profile.experience) * 15) + (20 if c_profile.summary else 0))
+            st.markdown(f"""
+            <div class="dash-card" style="margin-bottom:0.75rem;">
+                <div class="dash-card-hdr">
+                    <span>👤 Active Candidate Profile: {c_profile.name or 'Candidate'}</span>
+                    <span class="{'source-badge-demo' if st.session_state.is_demo else 'source-badge-live'}">
+                        {'⚡ Demo Profile' if st.session_state.is_demo else '🟢 Real Candidate Data'}
+                    </span>
+                </div>
+                <div class="dash-card-sub">Completeness: <strong>{completeness}%</strong> · Detected Skills: <strong>{len(c_profile.skills)}</strong> · Experience Entries: <strong>{len(c_profile.experience)}</strong></div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            ac1, ac2, ac3 = st.columns([2, 1, 1])
+            with ac1:
+                up_new = st.file_uploader("Upload Different CV (PDF)", type=["pdf"], key="dash_cv_reupload", label_visibility="collapsed")
+                if up_new is not None:
+                    _process_resume_upload(up_new, switch_step=False)
+            with ac2:
+                if not st.session_state.is_demo:
+                    if st.button("🎯 Switch to Demo Profile", use_container_width=True, key="dash_switch_demo"):
+                        _load_demo_profile()
+                        st.rerun()
+            with ac3:
+                if st.button("🗑️ Clear Profile", use_container_width=True, key="dash_clear_prof"):
+                    _clear_candidate_profile()
+                    st.rerun()
 
     st.markdown("---")
 
@@ -419,7 +469,10 @@ if st.session_state.nav_section == "Dashboard":
                     st.markdown(f"**CareerBridge Coach:**\n{msg.content}")
                     st.markdown("---")
         else:
-            st.info(f"Hello **{c_profile.name or 'Candidate'}**! I am your AI Career Coach. Click a chip above or type below to analyze your profile.")
+            if c_profile and c_profile.raw_text:
+                st.info(f"Hello **{c_profile.name or 'Candidate'}**! I am your AI Career Coach. Click a chip above or type below to analyze your profile context.")
+            else:
+                st.info("Hello! I am your AI Career Coach. Ask any career question or upload your CV above to unlock personalized profile guidance.")
 
         coach_query = st.text_input("Ask CareerBridge anything...", key="dash_coach_input", value=selected_chip if selected_chip else "")
         if st.button("Send to Coach →", type="primary", use_container_width=True, key="dash_coach_send") or selected_chip:
@@ -442,26 +495,31 @@ if st.session_state.nav_section == "Dashboard":
     st.markdown("---")
 
     # -----------------------------------------------------------------------
-    # SECTION C: CAREER HEALTH OVERVIEW (METRICS)
+    # SECTION C: CAREER HEALTH OVERVIEW (METRICS DERIVED ONLY FROM REAL STATE)
     # -----------------------------------------------------------------------
     st.markdown("#### 📊 Career Health Overview")
     
-    ats_val = st.session_state.ats_result.overall_score if st.session_state.ats_result else (78 if st.session_state.is_demo else 64)
+    ats_val_str = f"{st.session_state.ats_result.overall_score}/100" if st.session_state.ats_result else "—"
+    comp_val_str = f"{min(100, (len(c_profile.skills) * 5) + (len(c_profile.experience) * 15) + (20 if c_profile.summary else 0))}%" if (c_profile and c_profile.raw_text) else "—"
     saved_cnt = len(st.session_state.saved_jobs)
     total_apps = len(st.session_state.applications)
     interviews = sum(1 for a in st.session_state.applications if a.status == ApplicationStatus.INTERVIEW)
     offers = sum(1 for a in st.session_state.applications if a.status == ApplicationStatus.OFFER)
 
     m1, m2, m3, m4, m5, m6 = st.columns(6)
-    m1.markdown(f'<div class="metric-box"><div class="metric-val">{ats_val}/100</div><div class="metric-lbl">ATS Health</div></div>', unsafe_allow_html=True)
-    m2.markdown(f'<div class="metric-box"><div class="metric-val">{completeness}%</div><div class="metric-lbl">Completeness</div></div>', unsafe_allow_html=True)
+    m1.markdown(f'<div class="metric-box"><div class="metric-val">{ats_val_str}</div><div class="metric-lbl">ATS Health</div></div>', unsafe_allow_html=True)
+    m2.markdown(f'<div class="metric-box"><div class="metric-val">{comp_val_str}</div><div class="metric-lbl">Completeness</div></div>', unsafe_allow_html=True)
     m3.markdown(f'<div class="metric-box"><div class="metric-val">{saved_cnt}</div><div class="metric-lbl">Saved Jobs</div></div>', unsafe_allow_html=True)
     m4.markdown(f'<div class="metric-box"><div class="metric-val">{total_apps}</div><div class="metric-lbl">Applications</div></div>', unsafe_allow_html=True)
     m5.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#5B21B6">{interviews}</div><div class="metric-lbl">Interviews</div></div>', unsafe_allow_html=True)
     m6.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#059669">{offers}</div><div class="metric-lbl">Offers</div></div>', unsafe_allow_html=True)
 
     if st.session_state.is_demo:
-        st.caption("⚡ *Note: Metrics above are computed from active Demo Candidate data.*")
+        st.caption("⚡ *Note: Metrics above are derived from active Demo Candidate profile data.*")
+    elif not c_profile or not c_profile.raw_text:
+        st.caption("⚪ *Note: Upload your CV or search live jobs to generate your career health metrics.*")
+    else:
+        st.caption("🟢 *Note: Metrics above are calculated from your real candidate profile and activity.*")
 
     st.markdown("---")
 
@@ -474,65 +532,72 @@ if st.session_state.nav_section == "Dashboard":
         st.markdown("#### 🎯 Career Strategy")
         with st.container(border=True):
             pref = st.session_state.search_filters
-            st.markdown(f"**Target Role:** {pref.desired_role or 'Software Engineer'}")
-            st.markdown(f"**Location:** {pref.city or pref.country or 'Worldwide / Remote'}")
-            st.markdown(f"**Work Arrangement:** {pref.work_arrangement}")
-            st.markdown(f"**Employment Type:** {pref.employment_type}")
-            st.markdown(f"**Salary Preference:** {pref.currency} {pref.min_salary or 'Not set'}")
+            st.markdown(f"**Target Role:** {pref.desired_role or 'Not set'}")
+            st.markdown(f"**Location:** {pref.city or pref.country or 'Not set'}")
+            st.markdown(f"**Work Arrangement:** {pref.work_arrangement or 'Any'}")
+            st.markdown(f"**Employment Type:** {pref.employment_type or 'Any'}")
+            sal_pref = f"{pref.currency} {pref.min_salary:,.0f}" if pref.min_salary else "Not set"
+            st.markdown(f"**Salary Preference:** {sal_pref}")
             if st.button("Edit Strategy in Settings →", key="dash_to_settings", use_container_width=True):
                 st.session_state.nav_section = "Settings"
                 st.rerun()
 
     with col_jobs:
         st.markdown("#### 💼 Top Recommended Opportunities")
-        if not st.session_state.job_results:
-            with st.spinner("Fetching recommended live jobs..."):
-                jobs, msg = search_live_jobs(st.session_state.search_filters)
-                st.session_state.job_results = jobs
-                st.session_state.job_status_msg = msg
-
-        matches = match_candidate_to_jobs(c_profile, st.session_state.job_results[:5], top_k=3)
-        for m in matches:
-            j = m.job
-            is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
-            src_cls = "source-badge-live" if is_live else "source-badge-demo"
-            with st.container(border=True):
-                st.markdown(f"**{j.title}** — {j.company} <span class='{src_cls}'>{j.source}</span>", unsafe_allow_html=True)
-                st.caption(f"📍 {j.location} · Match: **{m.overall_score:.0f}%**")
-                st.markdown(" ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:4]), unsafe_allow_html=True)
-                
-                jb1, jb2 = st.columns(2)
-                with jb1:
-                    if st.button("Inspect & ATS Check", key=f"dash_inspect_{j.id}", use_container_width=True):
-                        st.session_state.selected_job = j
-                        st.session_state.nav_section = "ATS Scanner"
-                        st.rerun()
-                with jb2:
-                    if j.url:
-                        st.markdown(f'<a href="{j.url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;">View Job →</a>', unsafe_allow_html=True)
+        if not c_profile or not c_profile.raw_text:
+            st.info("💼 Upload your CV or search the live job market to discover personalized job matches.")
+            if st.button("🔍 Go to Find Jobs →", key="dash_goto_jobs", type="primary", use_container_width=True):
+                st.session_state.nav_section = "Find Jobs"
+                st.rerun()
+        else:
+            if not st.session_state.job_results:
+                st.info("Search the live job market to discover opportunities tailored to your profile.")
+                if st.button("🔍 Search Live Jobs Now", key="dash_run_search", type="primary", use_container_width=True):
+                    st.session_state.nav_section = "Find Jobs"
+                    st.rerun()
+            else:
+                matches = match_candidate_to_jobs(c_profile, st.session_state.job_results[:5], top_k=3)
+                for m in matches:
+                    j = m.job
+                    is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
+                    src_cls = "source-badge-live" if is_live else "source-badge-demo"
+                    with st.container(border=True):
+                        st.markdown(f"**{j.title}** — {j.company} <span class='{src_cls}'>{j.source}</span>", unsafe_allow_html=True)
+                        st.caption(f"📍 {j.location or 'Not specified'} · Match: **{m.overall_score:.0f}%**")
+                        st.markdown(" ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:4]), unsafe_allow_html=True)
+                        
+                        jb1, jb2 = st.columns(2)
+                        with jb1:
+                            if st.button("Inspect & ATS Check", key=f"dash_inspect_{j.id}", use_container_width=True):
+                                st.session_state.selected_job = j
+                                st.session_state.nav_section = "ATS Scanner"
+                                st.rerun()
+                        with jb2:
+                            if j.url:
+                                st.markdown(f'<a href="{j.url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;">View Job →</a>', unsafe_allow_html=True)
 
 
 # ===========================================================================
-# SECTION 2: FIND JOBS (LIVE SEARCH & DISCOVERY)
+# SECTION 2: FIND JOBS (REAL LIVE SEARCH AS DEFAULT)
 # ===========================================================================
 elif st.session_state.nav_section == "Find Jobs":
-    st.markdown("### 🔍 Live Job Search & Discovery")
+    st.markdown("### 🔍 Search the Live Job Market")
 
     # Search Bar & Optional Filters
     st.markdown("#### What role are you looking for?")
     s_col1, s_col2 = st.columns([3, 1])
     with s_col1:
-        query_input = st.text_input("Role Title", value=st.session_state.search_filters.desired_role or "Software Engineer", placeholder="e.g. AI Engineer, Machine Learning, Python", label_visibility="collapsed")
+        query_input = st.text_input("Role Title", value=st.session_state.search_filters.desired_role, placeholder="e.g. AI Engineer, Machine Learning, Python, Software Engineer", label_visibility="collapsed")
         st.session_state.search_filters.desired_role = query_input
     with s_col2:
-        if st.button("Search Jobs", type="primary", use_container_width=True, key="search_trigger"):
-            with st.spinner("Searching live providers (Remotive → Jobicy → Adzuna → Demo)..."):
+        if st.button("Search Live Jobs", type="primary", use_container_width=True, key="search_trigger"):
+            with st.spinner("Searching live job APIs (Jobicy → Remotive → Adzuna)..."):
                 jobs, msg = search_live_jobs(st.session_state.search_filters)
                 st.session_state.job_results = jobs
                 st.session_state.job_status_msg = msg
             st.rerun()
 
-    with st.expander("⚙️ Optional Filters (Country, City, Work Type, Salary)", expanded=False):
+    with st.expander("⚙️ Optional Search Filters (Country, City, Work Arrangement, Salary)", expanded=False):
         fc1, fc2, fc3 = st.columns(3)
         with fc1:
             st.session_state.search_filters.country = st.text_input("Country", value=st.session_state.search_filters.country)
@@ -547,76 +612,108 @@ elif st.session_state.nav_section == "Find Jobs":
     # Provider Status Badge
     st.markdown(f"**Provider Status:** `{st.session_state.job_status_msg}`")
 
-    # Fetch initial feed if empty
+    # Initial Clean Empty State when no jobs searched yet
     if not st.session_state.job_results:
-        with st.spinner("Loading live job feed..."):
-            jobs, msg = search_live_jobs(st.session_state.search_filters)
-            st.session_state.job_results = jobs
-            st.session_state.job_status_msg = msg
+        st.markdown("""
+        <div class="dash-card" style="text-align:center;padding:2rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.5rem;">🔍</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#0F172A;">Search Live Opportunities</div>
+            <div style="font-size:0.88rem;color:#64748B;margin-top:0.25rem;margin-bottom:1.25rem;">
+                Enter a target role above and click <strong>Search Live Jobs</strong> to query real-time listings from Jobicy, Remotive, and Adzuna.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
-    # Display Job Cards & Detail Views
-    jobs_list = st.session_state.job_results
-    matches = match_candidate_to_jobs(c_profile, jobs_list, top_k=len(jobs_list))
+        ec1, ec2 = st.columns(2)
+        with ec1:
+            if st.button("🚀 Quick Search: Python Jobs", use_container_width=True, key="quick_python"):
+                st.session_state.search_filters.desired_role = "Python"
+                with st.spinner("Searching live providers..."):
+                    jobs, msg = search_live_jobs(st.session_state.search_filters)
+                    st.session_state.job_results = jobs
+                    st.session_state.job_status_msg = msg
+                st.rerun()
+        with ec2:
+            if st.button("📦 Load Verified Demo Dataset", use_container_width=True, key="load_demo_jobs"):
+                st.session_state.job_results = load_jobs()
+                st.session_state.job_status_msg = "DEMO MODE — Offline Dataset"
+                st.rerun()
 
-    for m in matches:
-        j = m.job
-        is_saved = any(sj.id == j.id for sj in st.session_state.saved_jobs)
-        is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
-        src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else f'<span class="source-badge-demo">DEMO MODE — {j.source}</span>'
+    else:
+        # Display Job Cards & Detail Views
+        jobs_list = st.session_state.job_results
+        
+        # If candidate exists, calculate match scores; otherwise match score is N/A
+        if c_profile and c_profile.raw_text:
+            matches = match_candidate_to_jobs(c_profile, jobs_list, top_k=len(jobs_list))
+        else:
+            matches = [MatchResult(job=j, overall_score=0.0, matched_skills=[], missing_skills=j.required_skills) for j in jobs_list]
 
-        with st.container(border=True):
-            j1, j2, j3 = st.columns([3, 1.2, 1])
-            with j1:
-                st.markdown(f"#### {j.title}")
-                st.markdown(f"**{j.company}** · 📍 {j.location or 'Not specified'} · {'🌐 Remote' if j.remote else '🏢 On-site'} · {j.employment_type}")
-                
-                # Salary & Date
-                sal_text = f"{j.salary_currency or '$'} {j.salary_min:,.0f} - {j.salary_max:,.0f}" if (j.salary_min or j.salary_max) else "Not disclosed"
-                date_text = j.posted_date if j.posted_date else "Not specified"
-                st.caption(f"💰 Salary: {sal_text} · Posted: {date_text} · {src_badge}", unsafe_allow_html=True)
-                
-                # Description Expander
-                desc_type = "Description Preview" if j.description_is_snippet else "Full Job Description"
-                with st.expander(f"📖 {desc_type}"):
-                    st.write(j.description[:1500])
+        for m in matches:
+            j = m.job
+            is_saved = any(sj.id == j.id for sj in st.session_state.saved_jobs)
+            is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
+            src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else f'<span class="source-badge-demo">DEMO MODE — {j.source}</span>'
+
+            with st.container(border=True):
+                j1, j2, j3 = st.columns([3, 1.2, 1])
+                with j1:
+                    st.markdown(f"#### {j.title}")
+                    st.markdown(f"**{j.company}** · 📍 {j.location or 'Not specified'} · {'🌐 Remote' if j.remote else '🏢 On-site'} · {j.employment_type}")
+                    
+                    # Salary & Date
+                    sal_text = f"{j.salary_currency or '$'} {j.salary_min:,.0f} - {j.salary_max:,.0f}" if (j.salary_min or j.salary_max) else "Not disclosed"
+                    date_text = j.posted_date if j.posted_date else "Not specified"
+                    st.caption(f"💰 Salary: {sal_text} · Posted: {date_text} · {src_badge}", unsafe_allow_html=True)
+                    
+                    # Description Expander
+                    desc_type = "Description Preview" if j.description_is_snippet else "Full Job Description"
+                    with st.expander(f"📖 {desc_type}"):
+                        st.write(j.description[:1500])
+                        if j.url:
+                            st.markdown(f"👉 [View Original Posting on {j.source}]({j.url})")
+
+                    # Skill Overlap if candidate available
+                    if c_profile and c_profile.raw_text:
+                        st.markdown("✅ Matched: " + (" ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:5]) if m.matched_skills else "None yet"), unsafe_allow_html=True)
+                        if m.missing_skills:
+                            st.markdown("• Missing: " + " ".join(f'<span class="tag-m">{s}</span>' for s in m.missing_skills[:4]), unsafe_allow_html=True)
+                    else:
+                        st.caption("📄 *Upload CV to calculate candidate skill overlap.*")
+
+                with j2:
+                    if c_profile and c_profile.raw_text:
+                        score_c = "#059669" if m.overall_score >= 70 else "#D97706" if m.overall_score >= 50 else "#DC2626"
+                        st.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{score_c}">{m.overall_score:.0f}%</div><div class="metric-lbl">Match Score</div></div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Match Score</div></div>', unsafe_allow_html=True)
+
+                with j3:
+                    if st.button("📊 ATS Check", key=f"ats_scan_{j.id}", use_container_width=True):
+                        st.session_state.selected_job = j
+                        st.session_state.nav_section = "ATS Scanner"
+                        st.rerun()
+
+                    if is_saved:
+                        if st.button("★ Unsave", key=f"unsave_{j.id}", use_container_width=True):
+                            st.session_state.saved_jobs = [sj for sj in st.session_state.saved_jobs if sj.id != j.id]
+                            _persist_state()
+                            st.rerun()
+                    else:
+                        if st.button("☆ Save Job", key=f"save_{j.id}", use_container_width=True):
+                            st.session_state.saved_jobs.append(j)
+                            if not any(a.job_id == j.id for a in st.session_state.applications):
+                                st.session_state.applications.append(ApplicationRecord(
+                                    id=f"app_{len(st.session_state.applications)+1}",
+                                    job_id=j.id, job_title=j.title, company=j.company,
+                                    job_url=j.url, source=j.source, status=ApplicationStatus.SAVED,
+                                    date=str(datetime.now())[:10], match_score=m.overall_score
+                                ))
+                            _persist_state()
+                            st.rerun()
+
                     if j.url:
-                        st.markdown(f"👉 [View Original Posting on {j.source}]({j.url})")
-
-                # Skill Overlap
-                st.markdown("✅ Matched: " + " ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:5]), unsafe_allow_html=True)
-                if m.missing_skills:
-                    st.markdown("• Missing: " + " ".join(f'<span class="tag-m">{s}</span>' for s in m.missing_skills[:4]), unsafe_allow_html=True)
-
-            with j2:
-                score_c = "#059669" if m.overall_score >= 70 else "#D97706" if m.overall_score >= 50 else "#DC2626"
-                st.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{score_c}">{m.overall_score:.0f}%</div><div class="metric-lbl">Match Score</div></div>', unsafe_allow_html=True)
-
-            with j3:
-                if st.button("📊 ATS Check", key=f"ats_scan_{j.id}", use_container_width=True):
-                    st.session_state.selected_job = j
-                    st.session_state.nav_section = "ATS Scanner"
-                    st.rerun()
-
-                if is_saved:
-                    if st.button("★ Unsave", key=f"unsave_{j.id}", use_container_width=True):
-                        st.session_state.saved_jobs = [sj for sj in st.session_state.saved_jobs if sj.id != j.id]
-                        _persist_state()
-                        st.rerun()
-                else:
-                    if st.button("☆ Save Job", key=f"save_{j.id}", use_container_width=True):
-                        st.session_state.saved_jobs.append(j)
-                        if not any(a.job_id == j.id for a in st.session_state.applications):
-                            st.session_state.applications.append(ApplicationRecord(
-                                id=f"app_{len(st.session_state.applications)+1}",
-                                job_id=j.id, job_title=j.title, company=j.company,
-                                job_url=j.url, source=j.source, status=ApplicationStatus.SAVED,
-                                date=str(datetime.now())[:10], match_score=m.overall_score
-                            ))
-                        _persist_state()
-                        st.rerun()
-
-                if j.url:
-                    st.markdown(f'<a href="{j.url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:0.3rem;">View Job →</a>', unsafe_allow_html=True)
+                        st.markdown(f'<a href="{j.url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:0.3rem;">View Job →</a>', unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -633,33 +730,41 @@ elif st.session_state.nav_section == "My CV":
         if uploaded is not None:
             _process_resume_upload(uploaded, switch_step=False)
 
+        st.markdown("---")
         if st.button("🎯 Load Demo Profile (Alex Chen)", use_container_width=True, key="my_cv_demo"):
-            st.session_state.candidate = get_demo_candidate()
-            st.session_state.is_demo = True
-            st.session_state.processed_resume_hash = None
-            _persist_state()
+            _load_demo_profile()
             st.rerun()
+
+        if c_profile and c_profile.raw_text:
+            if st.button("🗑️ Clear Active Candidate Profile", use_container_width=True, key="my_cv_clear"):
+                _clear_candidate_profile()
+                st.rerun()
 
     with c2:
         st.markdown("#### Profile Form Editor")
         with st.form("my_cv_form"):
-            e_name = st.text_input("Full Name", value=c_profile.name or "")
-            e_email = st.text_input("Email", value=c_profile.email or "")
-            e_phone = st.text_input("Phone", value=c_profile.phone or "")
-            e_summary = st.text_area("Summary", value=c_profile.summary or "", height=100)
-            e_skills = st.text_input("Skills (comma separated)", value=", ".join(c_profile.skills))
-            e_exp = st.text_area("Experience Items (one per line)", value="\n".join(c_profile.experience), height=120)
+            curr_cand = c_profile or CandidateProfile()
+            e_name = st.text_input("Full Name", value=curr_cand.name or "")
+            e_email = st.text_input("Email", value=curr_cand.email or "")
+            e_phone = st.text_input("Phone", value=curr_cand.phone or "")
+            e_summary = st.text_area("Summary", value=curr_cand.summary or "", height=100)
+            e_skills = st.text_input("Skills (comma separated)", value=", ".join(curr_cand.skills))
+            e_exp = st.text_area("Experience Items (one per line)", value="\n".join(curr_cand.experience), height=120)
 
-            if st.form_submit_button("Save Changes", type="primary", use_container_width=True):
-                c_profile.name = e_name
-                c_profile.email = e_email
-                c_profile.phone = e_phone
-                c_profile.summary = e_summary
-                c_profile.skills = [s.strip() for s in e_skills.split(",") if s.strip()]
-                c_profile.experience = [x.strip() for x in e_exp.split("\n") if x.strip()]
-                st.session_state.candidate = c_profile
+            if st.form_submit_button("Save Profile Changes", type="primary", use_container_width=True):
+                updated_cand = CandidateProfile(
+                    name=e_name,
+                    email=e_email,
+                    phone=e_phone,
+                    summary=e_summary,
+                    skills=[s.strip() for s in e_skills.split(",") if s.strip()],
+                    experience=[x.strip() for x in e_exp.split("\n") if x.strip()],
+                    raw_text=curr_cand.raw_text or "Manually entered profile",
+                )
+                st.session_state.candidate = updated_cand
+                st.session_state.is_demo = False
                 _persist_state()
-                st.success("Candidate Profile saved!")
+                st.success("Candidate Profile saved successfully!")
                 st.rerun()
 
 
@@ -669,54 +774,79 @@ elif st.session_state.nav_section == "My CV":
 elif st.session_state.nav_section == "ATS Scanner":
     st.markdown("### 📊 ATS Scanner & Deterministic Breakdown")
 
-    available_jobs = st.session_state.job_results or load_jobs()
-    job_map = {f"{j.title} — {j.company}": j for j in available_jobs}
-    
-    sel_job_key = st.selectbox("Select Target Job:", list(job_map.keys()), index=0)
-    target_job = job_map[sel_job_key]
-    st.session_state.selected_job = target_job
+    if not c_profile or not c_profile.raw_text:
+        st.markdown("""
+        <div class="dash-card" style="text-align:center;padding:2rem;">
+            <div style="font-size:2.5rem;margin-bottom:0.5rem;">📄</div>
+            <div style="font-size:1.1rem;font-weight:700;color:#0F172A;">Candidate Profile Required</div>
+            <div style="font-size:0.88rem;color:#64748B;margin-top:0.25rem;margin-bottom:1.25rem;">
+                Upload a CV or load Demo Profile to evaluate your ATS readiness against target job descriptions.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        ac1, ac2 = st.columns(2)
+        with ac1:
+            up_ats = st.file_uploader("Upload CV (PDF)", type=["pdf"], key="ats_cv_up")
+            if up_ats is not None:
+                _process_resume_upload(up_ats, switch_step=False)
+        with ac2:
+            if st.button("🎯 Use Demo Profile (Alex Chen)", use_container_width=True, key="ats_load_demo"):
+                _load_demo_profile()
+                st.rerun()
+    else:
+        available_jobs = st.session_state.job_results or load_jobs()
+        job_map = {f"{j.title} — {j.company} ({j.source})": j for j in available_jobs}
+        
+        sel_job_key = st.selectbox("Select Target Job for ATS Analysis:", list(job_map.keys()), index=0)
+        target_job = job_map[sel_job_key]
+        st.session_state.selected_job = target_job
 
-    if st.button("🚀 Run Deterministic ATS Check", type="primary", use_container_width=True):
-        ats = analyze_ats(c_profile, target_job)
-        gaps = analyze_gaps(c_profile, target_job)
-        st.session_state.ats_result = ats
-        st.session_state.gap_result = gaps
-        _persist_state()
+        if st.button("🚀 Run Deterministic ATS Check", type="primary", use_container_width=True):
+            ats = analyze_ats(c_profile, target_job)
+            gaps = analyze_gaps(c_profile, target_job)
+            st.session_state.ats_result = ats
+            st.session_state.gap_result = gaps
+            _persist_state()
 
-    if st.session_state.ats_result is None:
-        st.session_state.ats_result = analyze_ats(c_profile, target_job)
-        st.session_state.gap_result = analyze_gaps(c_profile, target_job)
+        if st.session_state.ats_result is None:
+            st.info("Click **Run Deterministic ATS Check** above to evaluate your CV against the selected job.")
+            sc1, sc2, sc3, sc4, sc5 = st.columns(5)
+            sc1.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Overall ATS</div></div>', unsafe_allow_html=True)
+            sc2.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Skills Match</div></div>', unsafe_allow_html=True)
+            sc3.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Keywords</div></div>', unsafe_allow_html=True)
+            sc4.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Experience</div></div>', unsafe_allow_html=True)
+            sc5.markdown('<div class="metric-box"><div class="metric-val" style="color:#64748B">—</div><div class="metric-lbl">Format</div></div>', unsafe_allow_html=True)
+        else:
+            ats = st.session_state.ats_result
+            gaps = st.session_state.gap_result or analyze_gaps(c_profile, target_job)
 
-    ats = st.session_state.ats_result
-    gaps = st.session_state.gap_result
+            sc1, sc2, sc3, sc4, sc5 = st.columns(5)
+            score_c = "#059669" if ats.overall_score >= 70 else "#D97706" if ats.overall_score >= 50 else "#DC2626"
+            sc1.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{score_c}">{ats.overall_score}</div><div class="metric-lbl">Overall ATS</div></div>', unsafe_allow_html=True)
+            sc2.markdown(f'<div class="metric-box"><div class="metric-val">{ats.skills_match}%</div><div class="metric-lbl">Skills Match</div></div>', unsafe_allow_html=True)
+            sc3.markdown(f'<div class="metric-box"><div class="metric-val">{ats.keyword_match}%</div><div class="metric-lbl">Keywords</div></div>', unsafe_allow_html=True)
+            sc4.markdown(f'<div class="metric-box"><div class="metric-val">{ats.experience_match}%</div><div class="metric-lbl">Experience</div></div>', unsafe_allow_html=True)
+            sc5.markdown(f'<div class="metric-box"><div class="metric-val">{ats.format_score}%</div><div class="metric-lbl">Format</div></div>', unsafe_allow_html=True)
 
-    sc1, sc2, sc3, sc4, sc5 = st.columns(5)
-    score_c = "#059669" if ats.overall_score >= 70 else "#D97706" if ats.overall_score >= 50 else "#DC2626"
-    sc1.markdown(f'<div class="metric-box"><div class="metric-val" style="color:{score_c}">{ats.overall_score}</div><div class="metric-lbl">Overall ATS</div></div>', unsafe_allow_html=True)
-    sc2.markdown(f'<div class="metric-box"><div class="metric-val">{ats.skills_match}%</div><div class="metric-lbl">Skills Match</div></div>', unsafe_allow_html=True)
-    sc3.markdown(f'<div class="metric-box"><div class="metric-val">{ats.keyword_match}%</div><div class="metric-lbl">Keywords</div></div>', unsafe_allow_html=True)
-    sc4.markdown(f'<div class="metric-box"><div class="metric-val">{ats.experience_match}%</div><div class="metric-lbl">Experience</div></div>', unsafe_allow_html=True)
-    sc5.markdown(f'<div class="metric-box"><div class="metric-val">{ats.format_score}%</div><div class="metric-lbl">Format</div></div>', unsafe_allow_html=True)
+            st.markdown("---")
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                st.markdown(f"##### ✅ Verified Skills ({len(gaps.verified_skills)})")
+                for sk in gaps.verified_skills:
+                    st.markdown(f'<span class="tag-v">{sk.name}</span>', unsafe_allow_html=True)
+            with col_b:
+                st.markdown(f"##### 🟡 Inferred Skills ({len(gaps.inferred_skills)})")
+                for sk in gaps.inferred_skills:
+                    st.markdown(f'<span class="tag-i">{sk.name}</span>', unsafe_allow_html=True)
+            with col_c:
+                st.markdown(f"##### ❌ Missing Skills ({len(gaps.missing_skills)})")
+                for sk in gaps.missing_skills:
+                    st.markdown(f'<span class="tag-m">{sk.name}</span>', unsafe_allow_html=True)
 
-    st.markdown("---")
-    col_a, col_b, col_c = st.columns(3)
-    with col_a:
-        st.markdown(f"##### ✅ Verified Skills ({len(gaps.verified_skills)})")
-        for sk in gaps.verified_skills:
-            st.markdown(f'<span class="tag-v">{sk.name}</span>', unsafe_allow_html=True)
-    with col_b:
-        st.markdown(f"##### 🟡 Inferred Skills ({len(gaps.inferred_skills)})")
-        for sk in gaps.inferred_skills:
-            st.markdown(f'<span class="tag-i">{sk.name}</span>', unsafe_allow_html=True)
-    with col_c:
-        st.markdown(f"##### ❌ Missing Skills ({len(gaps.missing_skills)})")
-        for sk in gaps.missing_skills:
-            st.markdown(f'<span class="tag-m">{sk.name}</span>', unsafe_allow_html=True)
-
-    st.markdown("---")
-    if st.button("✨ Optimize Profile for This Job →", type="primary", use_container_width=True):
-        st.session_state.nav_section = "Improve CV"
-        st.rerun()
+            st.markdown("---")
+            if st.button("✨ Optimize Profile for This Job →", type="primary", use_container_width=True):
+                st.session_state.nav_section = "Improve CV"
+                st.rerun()
 
 
 # ===========================================================================
@@ -725,57 +855,67 @@ elif st.session_state.nav_section == "ATS Scanner":
 elif st.session_state.nav_section == "Improve CV":
     st.markdown("### ✨ Profile Optimization Workspace")
 
-    target_job = st.session_state.selected_job or load_jobs()[0]
-    ats_score = st.session_state.ats_result.overall_score if st.session_state.ats_result else 64
+    if not c_profile or not c_profile.raw_text:
+        st.info("📄 Upload your CV or load Demo Profile to optimize your CV experience bullets and summary.")
+    elif not st.session_state.selected_job:
+        st.info("💼 Select a target job in Find Jobs or ATS Scanner to optimize your profile.")
+    else:
+        target_job = st.session_state.selected_job
+        ats_score = st.session_state.ats_result.overall_score if st.session_state.ats_result else 64
 
-    if st.session_state.optimization is None:
-        with st.spinner("Generating profile optimization with X-Y-Z guardrails..."):
-            st.session_state.optimization = optimize_profile(c_profile, target_job, ats_score)
+        if st.session_state.optimization is None:
+            if st.button("✨ Generate Profile Optimization", type="primary", use_container_width=True):
+                with st.spinner("Generating profile optimization with X-Y-Z guardrails..."):
+                    st.session_state.optimization = optimize_profile(c_profile, target_job, ats_score)
+                    _persist_state()
+                st.rerun()
+            else:
+                st.info("Click **Generate Profile Optimization** above to optimize your CV summary and experience bullets.")
+        else:
+            opt: OptimizedProfile = st.session_state.optimization
 
-    opt: OptimizedProfile = st.session_state.optimization
+            sc1, sc2, sc3 = st.columns([2, 1, 2])
+            sc1.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#DC2626">{opt.before_score}</div><div class="metric-lbl">Before ATS</div></div>', unsafe_allow_html=True)
+            sc2.markdown('<div style="text-align:center;padding-top:1.5rem;font-size:2rem">→</div>', unsafe_allow_html=True)
+            sc3.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#059669">{opt.after_score}</div><div class="metric-lbl">After ATS</div></div>', unsafe_allow_html=True)
 
-    sc1, sc2, sc3 = st.columns([2, 1, 2])
-    sc1.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#DC2626">{opt.before_score}</div><div class="metric-lbl">Before ATS</div></div>', unsafe_allow_html=True)
-    sc2.markdown('<div style="text-align:center;padding-top:1.5rem;font-size:2rem">→</div>', unsafe_allow_html=True)
-    sc3.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#059669">{opt.after_score}</div><div class="metric-lbl">After ATS</div></div>', unsafe_allow_html=True)
+            st.markdown("---")
+            st.markdown("##### 📝 Summary Optimization")
+            b1, b2 = st.columns(2)
+            with b1:
+                st.markdown("**Original:**")
+                st.warning(opt.original_summary)
+            with b2:
+                st.markdown("**Optimized:**")
+                st.success(opt.optimized_summary)
 
-    st.markdown("---")
-    st.markdown("##### 📝 Summary Optimization")
-    b1, b2 = st.columns(2)
-    with b1:
-        st.markdown("**Original:**")
-        st.warning(opt.original_summary)
-    with b2:
-        st.markdown("**Optimized:**")
-        st.success(opt.optimized_summary)
+            st.markdown("##### 🎯 Experience Bullets Optimization")
+            bb1, bb2 = st.columns(2)
+            with bb1:
+                st.markdown("**Original Bullets:**")
+                for b in opt.original_bullets:
+                    st.markdown(f"- {b}")
+            with bb2:
+                st.markdown("**Optimized Bullets:**")
+                for b in opt.optimized_bullets:
+                    st.markdown(f"- ✨ {b}")
 
-    st.markdown("##### 🎯 Experience Bullets Optimization")
-    bb1, bb2 = st.columns(2)
-    with bb1:
-        st.markdown("**Original Bullets:**")
-        for b in opt.original_bullets:
-            st.markdown(f"- {b}")
-    with bb2:
-        st.markdown("**Optimized Bullets:**")
-        for b in opt.optimized_bullets:
-            st.markdown(f"- ✨ {b}")
+            st.info("🛡️ **Guardrail Verified:** Metrics are strictly derived from actual candidate evidence. Zero fabricated credentials.", icon="🛡️")
 
-    st.info("🛡️ **Guardrail Verified:** Metrics are strictly derived from actual candidate evidence. Zero fabricated credentials.", icon="🛡️")
-
-    st.markdown("---")
-    ac1, ac2 = st.columns(2)
-    with ac1:
-        if st.button("✅ Approve Optimization", type="primary", use_container_width=True):
-            st.session_state.approval = "approved"
-            c_profile.summary = opt.optimized_summary
-            _persist_state()
-            st.success("Optimization applied to Profile!")
-            st.session_state.nav_section = "Cover Letter"
-            st.rerun()
-    with ac2:
-        if st.button("🔄 Reject & Regenerate", use_container_width=True):
-            st.session_state.optimization = None
-            st.rerun()
+            st.markdown("---")
+            ac1, ac2 = st.columns(2)
+            with ac1:
+                if st.button("✅ Approve Optimization", type="primary", use_container_width=True):
+                    st.session_state.approval = "approved"
+                    c_profile.summary = opt.optimized_summary
+                    _persist_state()
+                    st.success("Optimization applied to Profile!")
+                    st.session_state.nav_section = "Cover Letter"
+                    st.rerun()
+            with ac2:
+                if st.button("🔄 Reject & Regenerate", use_container_width=True):
+                    st.session_state.optimization = None
+                    st.rerun()
 
 
 # ===========================================================================
@@ -784,29 +924,32 @@ elif st.session_state.nav_section == "Improve CV":
 elif st.session_state.nav_section == "Cover Letter":
     st.markdown("### ✉️ Cover Letter Workspace")
 
-    target_job = st.session_state.selected_job or load_jobs()[0]
-    tone = st.radio("Tone Style:", ["Standard", "Concise", "Technical", "Formal"], horizontal=True)
+    if not c_profile or not c_profile.raw_text or not st.session_state.selected_job:
+        st.info("✉️ Upload a CV and select a target job in Find Jobs or ATS Scanner to generate a custom cover letter.")
+    else:
+        target_job = st.session_state.selected_job
+        tone = st.radio("Tone Style:", ["Standard", "Concise", "Technical", "Formal"], horizontal=True)
 
-    if st.button("✨ Generate Cover Letter", type="primary", use_container_width=True, key="gen_cl"):
-        with st.spinner("Generating grounded cover letter..."):
+        if st.button("✨ Generate Cover Letter", type="primary", use_container_width=True, key="gen_cl"):
+            with st.spinner("Generating grounded cover letter..."):
+                cl = generate_cover_letter(c_profile, target_job, tone=tone)
+                st.session_state["cover_letter"] = cl
+
+        cl = st.session_state.get("cover_letter")
+        if cl is None:
             cl = generate_cover_letter(c_profile, target_job, tone=tone)
             st.session_state["cover_letter"] = cl
 
-    cl = st.session_state.get("cover_letter")
-    if cl is None:
-        cl = generate_cover_letter(c_profile, target_job, tone=tone)
-        st.session_state["cover_letter"] = cl
+        st.markdown(f"**Target:** {target_job.title} at {target_job.company}")
+        editable_cl = st.text_area("Cover Letter:", value=cl.content, height=350)
 
-    st.markdown(f"**Target:** {target_job.title} at {target_job.company}")
-    editable_cl = st.text_area("Cover Letter:", value=cl.content, height=350)
-
-    st.download_button(
-        label="📥 Download Cover Letter (.txt)",
-        data=editable_cl,
-        file_name=f"Cover_Letter_{target_job.company}.txt",
-        mime="text/plain",
-        use_container_width=True,
-    )
+        st.download_button(
+            label="📥 Download Cover Letter (.txt)",
+            data=editable_cl,
+            file_name=f"Cover_Letter_{target_job.company}.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
 
 
 # ===========================================================================
@@ -817,7 +960,18 @@ elif st.session_state.nav_section == "Applications":
 
     apps = st.session_state.applications
 
-    with st.expander("➕ Log Application Record", expanded=False):
+    if not apps:
+        st.markdown("""
+        <div class="dash-card" style="text-align:center;padding:1.5rem;">
+            <div style="font-size:1.8rem;margin-bottom:0.25rem;">📁</div>
+            <div style="font-size:1rem;font-weight:700;color:#0F172A;">Your Application Pipeline is Empty</div>
+            <div style="font-size:0.85rem;color:#64748B;margin-top:0.2rem;margin-bottom:1rem;">
+                Save jobs from <strong>Find Jobs</strong> or log an application below to track your candidate pipeline.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with st.expander("➕ Log Application Record", expanded=(len(apps) == 0)):
         with st.form("new_app_form"):
             a_t = st.text_input("Job Title", value="Software Engineer")
             a_c = st.text_input("Company", value="Tech Corp")
@@ -897,15 +1051,29 @@ elif st.session_state.nav_section == "AI Career Coach":
 elif st.session_state.nav_section == "Analytics":
     st.markdown("### 📈 Career Analytics")
 
+    if st.session_state.is_demo:
+        st.caption("⚡ <span class='source-badge-demo'>DEMO DATA</span> *Displaying demo application metrics.*", unsafe_allow_html=True)
+
     apps = st.session_state.applications
-    a1, a2, a3, a4 = st.columns(4)
-    a1.markdown(f'<div class="metric-box"><div class="metric-val">{len(apps)}</div><div class="metric-lbl">Total Applications</div></div>', unsafe_allow_html=True)
-    applied_cnt = sum(1 for a in apps if a.status in [ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER])
-    interview_cnt = sum(1 for a in apps if a.status in [ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER])
-    rate = (interview_cnt / max(applied_cnt, 1)) * 100
-    a2.markdown(f'<div class="metric-box"><div class="metric-val">{applied_cnt}</div><div class="metric-lbl">Submitted</div></div>', unsafe_allow_html=True)
-    a3.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#5B21B6">{interview_cnt}</div><div class="metric-lbl">Interviews</div></div>', unsafe_allow_html=True)
-    a4.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#059669">{rate:.0f}%</div><div class="metric-lbl">Interview Rate</div></div>', unsafe_allow_html=True)
+    if not apps:
+        st.markdown("""
+        <div class="dash-card" style="text-align:center;padding:2rem;">
+            <div style="font-size:2rem;margin-bottom:0.5rem;">📈</div>
+            <div style="font-size:1.05rem;font-weight:700;color:#0F172A;">No Application Activity Yet</div>
+            <div style="font-size:0.85rem;color:#64748B;margin-top:0.25rem;">
+                Save or log job applications to populate your funnel analytics and conversion rates.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        a1, a2, a3, a4 = st.columns(4)
+        a1.markdown(f'<div class="metric-box"><div class="metric-val">{len(apps)}</div><div class="metric-lbl">Total Applications</div></div>', unsafe_allow_html=True)
+        applied_cnt = sum(1 for a in apps if a.status in [ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER])
+        interview_cnt = sum(1 for a in apps if a.status in [ApplicationStatus.INTERVIEW, ApplicationStatus.OFFER])
+        rate = (interview_cnt / max(applied_cnt, 1)) * 100
+        a2.markdown(f'<div class="metric-box"><div class="metric-val">{applied_cnt}</div><div class="metric-lbl">Submitted</div></div>', unsafe_allow_html=True)
+        a3.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#5B21B6">{interview_cnt}</div><div class="metric-lbl">Interviews</div></div>', unsafe_allow_html=True)
+        a4.markdown(f'<div class="metric-box"><div class="metric-val" style="color:#059669">{rate:.0f}%</div><div class="metric-lbl">Interview Rate</div></div>', unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -915,8 +1083,8 @@ elif st.session_state.nav_section == "Settings":
     st.markdown("### ⚙️ Settings & Career Strategy Preferences")
 
     with st.form("settings_form"):
-        pref_role = st.text_input("Target Role", value=st.session_state.search_filters.desired_role or "Software Engineer")
-        pref_country = st.text_input("Target Country / Region", value=st.session_state.search_filters.country or "US")
+        pref_role = st.text_input("Target Role", value=st.session_state.search_filters.desired_role or "")
+        pref_country = st.text_input("Target Country / Region", value=st.session_state.search_filters.country or "")
         pref_work = st.selectbox("Work Arrangement", ["Any", "Remote", "Hybrid", "On-site"])
         pref_curr = st.selectbox("Preferred Salary Currency", ["USD", "PKR", "GBP", "EUR", "CAD", "AUD"])
         
@@ -926,7 +1094,7 @@ elif st.session_state.nav_section == "Settings":
             st.session_state.search_filters.work_arrangement = pref_work
             st.session_state.search_filters.currency = pref_curr
             _persist_state()
-            st.success("Settings saved!")
+            st.success("Settings saved successfully!")
 
 
 # ===========================================================================
@@ -946,23 +1114,26 @@ elif st.session_state.nav_section == "Guided Golden Path":
         if uploaded is not None:
             _process_resume_upload(uploaded, switch_step=True)
             
-        if st.button("🎯 Load Demo Profile", use_container_width=True):
-            st.session_state.candidate = get_demo_candidate()
-            st.session_state.is_demo = True
-            st.session_state.processed_resume_hash = None
+        st.markdown("---")
+        if st.button("🎯 Load Demo Profile (Alex Chen)", use_container_width=True):
+            _load_demo_profile()
             st.session_state.step = "profile"
             st.rerun()
 
     elif st.session_state.step == "profile":
-        st.markdown(f"#### Step 2: Profile — {c_profile.name}")
+        curr_cand = c_profile or get_demo_candidate()
+        st.markdown(f"#### Step 2: Profile — {curr_cand.name}")
+        st.write(f"Summary: {curr_cand.summary}")
+        st.write(f"Skills ({len(curr_cand.skills)}): {', '.join(curr_cand.skills[:10])}")
         if st.button("🔍 Find Matching Jobs →", type="primary", use_container_width=True):
             st.session_state.step = "jobs"
             st.rerun()
 
     elif st.session_state.step == "jobs":
         st.markdown("#### Step 3: Recommended Jobs")
+        curr_cand = c_profile or get_demo_candidate()
         jobs = st.session_state.job_results or load_jobs()
-        matches = match_candidate_to_jobs(st.session_state.candidate, jobs[:5], top_k=5)
+        matches = match_candidate_to_jobs(curr_cand, jobs[:5], top_k=5)
         for m in matches:
             with st.container(border=True):
                 st.markdown(f"**{m.job.title}** — {m.job.company} ({m.overall_score:.0f}% Match)")
@@ -973,9 +1144,10 @@ elif st.session_state.nav_section == "Guided Golden Path":
 
     elif st.session_state.step == "ats":
         st.markdown("#### Step 4: ATS Analysis")
+        curr_cand = c_profile or get_demo_candidate()
         job = st.session_state.selected_job or load_jobs()[0]
-        ats = analyze_ats(st.session_state.candidate, job)
-        gaps = analyze_gaps(st.session_state.candidate, job)
+        ats = analyze_ats(curr_cand, job)
+        gaps = analyze_gaps(curr_cand, job)
         st.session_state.ats_result = ats
         st.session_state.gap_result = gaps
         st.metric("Overall ATS", f"{ats.overall_score}/100")
@@ -985,9 +1157,10 @@ elif st.session_state.nav_section == "Guided Golden Path":
 
     elif st.session_state.step == "optimize":
         st.markdown("#### Step 5: Profile Optimization")
+        curr_cand = c_profile or get_demo_candidate()
         job = st.session_state.selected_job or load_jobs()[0]
         ats = st.session_state.ats_result
-        opt = optimize_profile(st.session_state.candidate, job, ats.overall_score if ats else 64)
+        opt = optimize_profile(curr_cand, job, ats.overall_score if ats else 64)
         st.session_state.optimization = opt
         st.metric("Score Improvement", f"{opt.before_score} → {opt.after_score}")
         if st.button("✅ Review & Approve →", type="primary", use_container_width=True):
@@ -996,7 +1169,7 @@ elif st.session_state.nav_section == "Guided Golden Path":
 
     elif st.session_state.step == "review":
         st.markdown("#### Step 6: Human Review")
-        opt = st.session_state.optimization
+        opt = st.session_state.optimization or get_demo_optimized_profile()
         st.write(f"Optimized Summary: {opt.optimized_summary}")
         if st.button("✅ Approve & Generate Outreach →", type="primary", use_container_width=True):
             st.session_state.approval = "approved"
@@ -1005,8 +1178,9 @@ elif st.session_state.nav_section == "Guided Golden Path":
 
     elif st.session_state.step == "outreach":
         st.markdown("#### Step 7: Recruiter Outreach & 3 Interview Questions")
+        curr_cand = c_profile or get_demo_candidate()
         job = st.session_state.selected_job or load_jobs()[0]
-        out = generate_outreach(st.session_state.candidate, job)
+        out = generate_outreach(curr_cand, job)
         st.session_state.outreach = out
         st.text_area("Email", value=out.recruiter_email, height=180)
         st.text_area("InMail", value=out.recruiter_inmail, height=120)
