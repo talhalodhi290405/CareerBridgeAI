@@ -1,5 +1,9 @@
 import streamlit as st
 import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 st.set_page_config(page_title="CareerBridge AI", page_icon="🚀", layout="wide")
 
@@ -25,11 +29,12 @@ with col2:
     if uploaded_file and 'analyze_button' in locals() and analyze_button:
         with st.spinner("AI is analyzing resume and querying the LLM..."):
             
-            # 1. Send the file to your FastAPI backend
-            try:
-                # We package the file bytes to send over HTTP
-                files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
-                response = requests.post("http://localhost:8000/api/analyze", files=files)
+                # 1. Send the file to your FastAPI backend
+                try:
+                    # We package the file bytes to send over HTTP
+                    backend_url = os.environ.get('BACKEND_URL', 'http://localhost:8000')
+                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), "application/pdf")}
+                    response = requests.post(f"{backend_url}/api/analyze", files=files)
                 
                 if response.status_code == 200:
                     data = response.json()
