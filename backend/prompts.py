@@ -1,76 +1,124 @@
-# backend/prompts.py
+"""Prompt templates for CareerBridge AI LLM calls."""
 
-ATS_EVALUATION_PROMPT = """
-You are an expert ATS (Applicant Tracking System) and Senior Technical Recruiter.
-Your job is to evaluate a candidate's resume against a specific Job Description.
+ATS_ANALYSIS_PROMPT = """You are an expert ATS analyst. Analyze this candidate's resume against the target job.
 
-You MUST return your evaluation STRICTLY as a JSON object. Do not include any conversational text, markdown formatting, or explanations outside of the JSON block.
+Provide a semantic assessment to supplement the deterministic scores already computed.
 
-Here is the format you MUST follow:
+Return ONLY a JSON object with this exact structure:
 {{
-    "ats_score": <int 0-100>,
-    "recommendation": "<'Strong Hire', 'Interview', or 'Reject'>",
-    "matched_skills": ["skill1", "skill2", "skill3"],
-    "missing_skills": ["skill1", "skill2"],
-    "brief_summary": "<One short sentence summarizing the fit>"
+    "strengths": ["strength 1", "strength 2", "strength 3"],
+    "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
+    "summary": "One sentence summary of overall fit"
 }}
 
-EVALUATION CRITERIA:
-- Be ruthless but fair.
-- Look for exact keyword matches for technical skills.
-- If they are missing core requirements, dock their score heavily.
+CANDIDATE RESUME:
+{resume_text}
 
-CANDIDATE RESUME TEXT:
-{{resume_text}}
+TARGET JOB:
+{job_title} at {company}
+{job_description}
 
-TARGET JOB DESCRIPTION:
-{{job_description}}
+Required Skills: {required_skills}
 """
 
-RESUME_OPTIMIZER_PROMPT = """
-You are an Expert Resume Writer and Career Coach.
-The ATS just evaluated a candidate's resume and found several missing skills and weaknesses.
+OPTIMIZATION_PROMPT = """You are an expert resume optimizer. Improve the candidate's profile for the target job.
 
-Your job is to provide actionable, specific advice on how the candidate can optimize their resume to match the Job Description perfectly.
+RULES — YOU MUST FOLLOW THESE:
+- ONLY use information that exists in the resume. NEVER fabricate skills, companies, metrics, certifications, or achievements.
+- Improve wording, clarity, and keyword alignment.
+- Use action verbs and clear, concise language.
+- If using X-Y-Z format ("Accomplished X as measured by Y by doing Z"), ONLY include Y (the metric) if an actual number exists in the resume.
+- Do NOT invent percentages, user counts, revenue figures, or time savings.
 
-You MUST return your output STRICTLY as a JSON object. Do not include any conversational text outside of the JSON block.
-
-Here is the format you MUST follow:
+Return ONLY a JSON object:
 {{
-    "suggested_bullet_points": [
-        "Write a highly optimized resume bullet point using one of the missing skills",
-        "Write a second optimized bullet point"
+    "optimized_summary": "An improved professional summary (2-3 sentences)",
+    "optimized_bullets": [
+        "Improved bullet point 1 based on existing experience",
+        "Improved bullet point 2 based on existing experience",
+        "Improved bullet point 3 based on existing experience",
+        "Improved bullet point 4 based on existing experience",
+        "Improved bullet point 5 based on existing experience"
     ],
-    "actionable_feedback": "One paragraph explaining what sections of their resume they need to rewrite and how to position themselves better."
-}}
-
-ATS EVALUATION RESULTS (The missing gaps):
-{{ats_results}}
-
-CANDIDATE RESUME TEXT:
-{{resume_text}}
-"""
-
-OUTREACH_PROMPT = """
-You are a Strategic Career Agent and Outreach Expert.
-The candidate has been approved for a specific role. Your job is to generate highly customized outreach materials that leverage the candidate's strengths to get them an interview.
-
-You MUST return your output STRICTLY as a JSON object.
-
-Here is the format you MUST follow:
-{{
-    "cover_letter": "<A professional, high-conversion cover letter tailored to the job and resume>",
-    "recruiter_email": "<A short, punchy cold email to a recruiter highlighting 2-3 key wins>",
-    "interview_questions": [
-        "<Technical question 1 based on their specific experience and the job requirements>",
-        "<Technical question 2>",
-        "<Technical question 3>"
+    "improvements_made": [
+        "Description of improvement 1",
+        "Description of improvement 2",
+        "Description of improvement 3"
     ]
 }}
 
-CANDIDATE RESUME TEXT:
-{{resume_text}}
+CANDIDATE RESUME:
+{resume_text}
 
-TARGET JOB DESCRIPTION:
-{{job_description}}
+CANDIDATE SKILLS: {skills}
+
+TARGET JOB: {job_title} at {company}
+Required Skills: {required_skills}
+"""
+
+RECRUITER_EMAIL_PROMPT = """Write a professional recruiter outreach email for this candidate applying to this role.
+
+RULES:
+- Only reference skills and experience that exist in the resume.
+- Do NOT fabricate any claims.
+- Keep it concise (150-200 words).
+- Professional but personable tone.
+
+Return ONLY a JSON object:
+{{
+    "subject": "Email subject line",
+    "body": "The full email body"
+}}
+
+CANDIDATE: {candidate_name}
+SKILLS: {skills}
+EXPERIENCE HIGHLIGHTS: {experience}
+
+TARGET ROLE: {job_title} at {company}
+Required Skills: {required_skills}
+"""
+
+RECRUITER_INMAIL_PROMPT = """Write a short LinkedIn InMail message for this candidate reaching out about this role.
+
+RULES:
+- Only reference verified skills and experience.
+- Do NOT fabricate any claims.
+- Keep it brief (80-120 words).
+- Conversational but professional tone.
+
+Return ONLY a JSON object:
+{{
+    "message": "The InMail message text"
+}}
+
+CANDIDATE: {candidate_name}
+SKILLS: {skills}
+KEY EXPERIENCE: {experience}
+
+TARGET ROLE: {job_title} at {company}
+"""
+
+INTERVIEW_QUESTIONS_PROMPT = """Generate exactly 3 technical interview questions for this candidate interviewing for this role.
+
+RULES:
+- Questions must be specific to the role's technical requirements.
+- Questions should be relevant to the candidate's experience level.
+- Do NOT ask generic behavioral questions.
+- Each question should test a different technical area.
+
+Return ONLY a JSON object:
+{{
+    "questions": [
+        "Technical question 1",
+        "Technical question 2",
+        "Technical question 3"
+    ]
+}}
+
+CANDIDATE SKILLS: {skills}
+CANDIDATE EXPERIENCE: {experience}
+
+TARGET ROLE: {job_title}
+Required Skills: {required_skills}
+Job Description: {job_description}
 """

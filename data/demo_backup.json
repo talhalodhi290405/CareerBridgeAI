@@ -1,0 +1,132 @@
+{
+  "candidate": {
+    "name": "Alex Chen",
+    "email": "alex.chen@email.com",
+    "phone": "(555) 123-4567",
+    "location": "San Francisco, CA",
+    "summary": "Computer Science graduate with hands-on experience in Python, machine learning, and web development. Built multiple projects using TensorFlow, React, and cloud services. Passionate about applying AI to solve real-world problems.",
+    "skills": ["Python", "JavaScript", "React", "TensorFlow", "SQL", "Git", "Docker", "AWS", "REST APIs", "Machine Learning"],
+    "experience": [
+      "Software Engineering Intern at TechStartup Inc. - Developed REST API endpoints using Python and Flask, handling 500+ daily requests",
+      "Built automated data pipeline processing 10,000 records daily using Python and SQL",
+      "Collaborated with 4-person team to ship a customer-facing dashboard feature using React",
+      "Teaching Assistant for Introduction to Machine Learning - Graded assignments and held office hours for 60 students"
+    ],
+    "education": [
+      "B.S. Computer Science, University of California - GPA: 3.7/4.0 (2024)",
+      "Relevant Coursework: Machine Learning, Data Structures, Algorithms, Database Systems, Software Engineering"
+    ],
+    "projects": [
+      "AI Resume Analyzer - Built an NLP pipeline using spaCy and TensorFlow to extract and classify resume sections with 87% accuracy",
+      "E-Commerce Platform - Full-stack web app using React, Node.js, and PostgreSQL with Stripe payment integration",
+      "Sentiment Analysis Dashboard - Real-time Twitter sentiment analysis using Python, Tweepy, and VADER, deployed on AWS EC2"
+    ],
+    "certifications": [
+      "AWS Cloud Practitioner (2024)",
+      "Google TensorFlow Developer Certificate (2023)"
+    ],
+    "achievements": [
+      "1st Place, University Hackathon 2023 - Built an accessibility tool using computer vision",
+      "Dean's List - 4 consecutive semesters"
+    ],
+    "raw_text": "Alex Chen\nalex.chen@email.com | (555) 123-4567 | San Francisco, CA\n\nProfessional Summary\nComputer Science graduate with hands-on experience in Python, machine learning, and web development. Built multiple projects using TensorFlow, React, and cloud services. Passionate about applying AI to solve real-world problems.\n\nSkills\nPython, JavaScript, React, TensorFlow, SQL, Git, Docker, AWS, REST APIs, Machine Learning\n\nExperience\nSoftware Engineering Intern | TechStartup Inc. | Summer 2023\n- Developed REST API endpoints using Python and Flask, handling 500+ daily requests\n- Built automated data pipeline processing 10,000 records daily using Python and SQL\n- Collaborated with 4-person team to ship a customer-facing dashboard feature using React\n\nTeaching Assistant | University of California | Fall 2023\n- Teaching Assistant for Introduction to Machine Learning - Graded assignments and held office hours for 60 students\n\nEducation\nB.S. Computer Science, University of California - GPA: 3.7/4.0 (2024)\nRelevant Coursework: Machine Learning, Data Structures, Algorithms, Database Systems, Software Engineering\n\nProjects\nAI Resume Analyzer - Built an NLP pipeline using spaCy and TensorFlow to extract and classify resume sections with 87% accuracy\nE-Commerce Platform - Full-stack web app using React, Node.js, and PostgreSQL with Stripe payment integration\nSentiment Analysis Dashboard - Real-time Twitter sentiment analysis using Python, Tweepy, and VADER, deployed on AWS EC2\n\nCertifications\nAWS Cloud Practitioner (2024)\nGoogle TensorFlow Developer Certificate (2023)\n\nAchievements\n1st Place, University Hackathon 2023 - Built an accessibility tool using computer vision\nDean's List - 4 consecutive semesters"
+  },
+  "target_job_id": "job_1",
+  "match_result": {
+    "overall_score": 62.5,
+    "matched_skills": ["Python", "TensorFlow", "Docker", "AWS"],
+    "missing_skills": ["PyTorch", "MLflow", "Kubernetes", "scikit-learn", "Hugging Face"],
+    "relevant_keywords": ["machine", "learning", "python", "model", "data", "api", "pipeline", "deploy"]
+  },
+  "ats_analysis": {
+    "overall_score": 48,
+    "keyword_match": 52,
+    "skills_match": 50,
+    "experience_match": 35,
+    "format_score": 85,
+    "strengths": [
+      "Matches 3/6 required skills: Python, TensorFlow, Docker",
+      "Has 1 preferred skill: AWS",
+      "Includes 3 projects demonstrating hands-on ML and full-stack experience",
+      "Strong academic record with relevant coursework in ML and software engineering"
+    ],
+    "gaps": [
+      "Missing 3 required skills: PyTorch, MLflow, Kubernetes",
+      "Missing 2 preferred skills: scikit-learn, Hugging Face",
+      "Limited professional ML experience — mostly academic/intern level",
+      "No professional summary tailored to ML Engineering role"
+    ],
+    "recommendations": [
+      "Add PyTorch projects or coursework to demonstrate framework versatility",
+      "Highlight ML pipeline experience from internship in more detail",
+      "Tailor professional summary specifically to ML Engineering",
+      "Add MLOps/deployment experience to demonstrate production readiness",
+      "Quantify ML model performance metrics where possible"
+    ],
+    "summary": "Candidate shows strong foundational skills but lacks some key ML-specific tools and production experience needed for a mid-level ML Engineer role."
+  },
+  "gap_analysis": {
+    "verified_skills": [
+      {"name": "Python", "classification": "verified", "evidence": "Listed in candidate's skills section"},
+      {"name": "TensorFlow", "classification": "verified", "evidence": "Listed in candidate's skills section"},
+      {"name": "Docker", "classification": "verified", "evidence": "Listed in candidate's skills section"},
+      {"name": "AWS", "classification": "verified", "evidence": "Listed in candidate's skills section"}
+    ],
+    "inferred_skills": [
+      {"name": "scikit-learn", "classification": "inferred", "evidence": "ML coursework implies familiarity but not explicitly listed"},
+      {"name": "Data Pipelines", "classification": "inferred", "evidence": "Built data pipeline at internship but not listed as a skill"}
+    ],
+    "missing_skills": [
+      {"name": "PyTorch", "classification": "missing", "evidence": null},
+      {"name": "MLflow", "classification": "missing", "evidence": null},
+      {"name": "Kubernetes", "classification": "missing", "evidence": null},
+      {"name": "Hugging Face", "classification": "missing", "evidence": null}
+    ],
+    "keyword_gaps": ["pytorch", "mlflow", "kubernetes", "deployment", "production", "monitoring", "inference"],
+    "experience_gaps": ["Role requires Mid-level experience; resume shows limited entries"],
+    "profile_weaknesses": [
+      "Professional summary not tailored to ML Engineering",
+      "Limited production ML deployment experience"
+    ],
+    "recommendations": [
+      "Consider gaining experience in: PyTorch, MLflow, Kubernetes",
+      "Move these skills to your explicit skills section: scikit-learn, Data Pipelines",
+      "Address profile gaps: Professional summary not tailored; limited production experience"
+    ]
+  },
+  "optimized_profile": {
+    "original_summary": "Computer Science graduate with hands-on experience in Python, machine learning, and web development. Built multiple projects using TensorFlow, React, and cloud services. Passionate about applying AI to solve real-world problems.",
+    "optimized_summary": "Results-driven ML Engineer with hands-on experience building and deploying machine learning pipelines using Python and TensorFlow. Demonstrated ability to build data processing systems handling 10,000+ records daily, develop NLP models achieving 87% accuracy, and deploy ML applications on AWS. Seeking to leverage strong foundations in model development, data engineering, and cloud deployment as an ML Engineer.",
+    "original_bullets": [
+      "Software Engineering Intern at TechStartup Inc. - Developed REST API endpoints using Python and Flask, handling 500+ daily requests",
+      "Built automated data pipeline processing 10,000 records daily using Python and SQL",
+      "Collaborated with 4-person team to ship a customer-facing dashboard feature using React",
+      "Teaching Assistant for Introduction to Machine Learning - Graded assignments and held office hours for 60 students"
+    ],
+    "optimized_bullets": [
+      "Engineered production-grade REST API endpoints using Python and Flask, serving 500+ daily requests with reliable uptime and error handling",
+      "Designed and implemented automated data pipeline processing 10,000 records daily, demonstrating data engineering skills essential for ML workflows",
+      "Built NLP classification pipeline using TensorFlow and spaCy, achieving 87% accuracy on resume section extraction — demonstrating end-to-end ML model development",
+      "Deployed real-time sentiment analysis system on AWS EC2, handling streaming data ingestion and model inference in production",
+      "Collaborated with cross-functional team of 4 engineers to deliver customer-facing analytics dashboard, demonstrating teamwork and agile delivery"
+    ],
+    "before_score": 48,
+    "after_score": 88,
+    "improvements_made": [
+      "Rewritten professional summary to emphasize ML engineering focus and quantified achievements",
+      "Restructured experience bullets with strong action verbs and ML-relevant framing",
+      "Elevated project work to demonstrate production ML deployment capability",
+      "Improved keyword alignment with ML Engineer job requirements",
+      "Added quantified metrics where real data existed (500+ requests, 10,000 records, 87% accuracy)"
+    ]
+  },
+  "outreach": {
+    "recruiter_email": "Subject: Strong ML Engineering Candidate — Python, TensorFlow, AWS Background\n\nDear Hiring Manager,\n\nI am writing to express my interest in the ML Engineer position at NeuralScale AI.\n\nAs a recent Computer Science graduate with hands-on experience in Python, TensorFlow, and AWS, I bring a strong foundation in machine learning model development and deployment. During my internship at TechStartup Inc., I built data pipelines processing 10,000 records daily and developed REST APIs serving 500+ daily requests — experience directly relevant to production ML systems.\n\nMy project portfolio includes an NLP classification pipeline achieving 87% accuracy and a real-time sentiment analysis system deployed on AWS EC2, demonstrating my ability to take ML models from prototype to production.\n\nI hold AWS Cloud Practitioner and Google TensorFlow Developer certifications, reflecting my commitment to continuous learning in the ML/AI space.\n\nI would welcome the opportunity to discuss how my skills align with your team's needs. I am available for a conversation at your convenience.\n\nBest regards,\nAlex Chen\nalex.chen@email.com | (555) 123-4567",
+    "recruiter_inmail": "Hi,\n\nI noticed the ML Engineer opening at NeuralScale AI and wanted to reach out. With a CS degree, hands-on Python/TensorFlow experience, and projects including an NLP pipeline (87% accuracy) and a real-time sentiment system deployed on AWS, I believe I could contribute meaningfully to your team.\n\nI'm particularly excited about NeuralScale's work in production ML systems. Would you be open to a brief conversation about the role?\n\nBest,\nAlex Chen",
+    "interview_questions": [
+      "Can you walk me through your NLP classification pipeline project? Specifically, how did you preprocess the data, choose your model architecture in TensorFlow, and evaluate the 87% accuracy you achieved?",
+      "How would you design a scalable ML model serving infrastructure that handles real-time inference requests? What considerations would you make for model versioning, monitoring, and rollback?",
+      "You built a data pipeline processing 10,000 records daily. If you needed to scale this to 1 million records with ML feature engineering integrated, what architectural changes would you make and what tools would you consider?"
+    ]
+  }
+}

@@ -1,42 +1,182 @@
 [
   {
     "id": "job_1",
-    "title": "Senior Python Engineer",
-    "company": "TechFlow AI",
+    "title": "Machine Learning Engineer",
+    "company": "TechNova AI",
     "location": "Remote",
+    "remote": true,
+    "experience_level": "Mid-level",
     "type": "Full-time",
-    "description": "Looking for a Senior Python Engineer with expertise in FastAPI, LangGraph, and ChromaDB. Must have experience building agentic AI workflows and deploying to AWS. 5+ years of experience required."
+    "description": "Join our dynamic team to build and scale state-of-the-art machine learning models. You will be responsible for deploying models into production and optimizing them for low latency. We are looking for someone with a strong background in deep learning and software engineering.",
+    "required_skills": ["Python", "TensorFlow", "PyTorch", "SQL", "Docker"],
+    "preferred_skills": ["AWS", "Kubernetes", "MLflow"]
   },
   {
     "id": "job_2",
     "title": "Frontend Developer (React)",
-    "company": "WebScale",
-    "location": "Onsite - New York",
+    "company": "PixelCraft Studios",
+    "location": "New York, NY",
+    "remote": false,
+    "experience_level": "Mid-level",
     "type": "Full-time",
-    "description": "Experienced React developer needed to build high-performance dashboards. Skills: TypeScript, Tailwind CSS, Next.js. Experience with AI-powered UIs is a plus."
+    "description": "We are seeking a talented Frontend Developer to create engaging user interfaces for our flagship web application. You will collaborate with designers and backend engineers to deliver high-quality, responsive web pages. A deep understanding of React and modern JavaScript is essential.",
+    "required_skills": ["JavaScript", "React", "HTML/CSS", "TypeScript", "Redux"],
+    "preferred_skills": ["GraphQL", "Next.js", "Figma"]
   },
   {
     "id": "job_3",
     "title": "AI Research Intern",
-    "company": "NeuralMind",
-    "location": "Global",
+    "company": "Cognitive Frontiers",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Intern",
     "type": "Internship",
-    "description": "Research intern for LLM optimization and RAG pipelines. Knowledge of PyTorch, HuggingFace, and vector databases required. PhD or Masters in CS preferred."
+    "description": "As an AI Research Intern, you will assist our research scientists in conducting experiments and literature reviews. This role involves prototyping novel algorithms and analyzing large datasets. It is a great opportunity to learn about cutting-edge AI developments in a fast-paced environment.",
+    "required_skills": ["Python", "Machine Learning", "Mathematics", "Data Analysis"],
+    "preferred_skills": ["PyTorch", "Research Experience", "Latex"]
   },
   {
     "id": "job_4",
-    "title": "Backend Engineer (Node.js)",
-    "company": "DataStream",
+    "title": "Backend Engineer (Python)",
+    "company": "DataStream Solutions",
     "location": "Remote",
+    "remote": true,
+    "experience_level": "Mid-level",
     "type": "Full-time",
-    "description": "Looking for a Node.js expert to scale our data ingestion pipeline. Expertise in MongoDB, Redis, and Kafka. Experience with microservices architecture."
+    "description": "Design and develop robust backend microservices that power our data processing pipelines. You will work on scaling our infrastructure to handle millions of requests per day. The ideal candidate has strong Python skills and experience with scalable architectures.",
+    "required_skills": ["Python", "Django", "FastAPI", "PostgreSQL", "REST APIs", "Git"],
+    "preferred_skills": ["Redis", "Celery", "GCP"]
   },
   {
     "id": "job_5",
     "title": "Full Stack Engineer",
-    "company": "CloudNative",
-    "location": "Hybrid - Austin",
+    "company": "InnovateX",
+    "location": "Austin, TX (Hybrid)",
+    "remote": false,
+    "experience_level": "Mid-level",
     "type": "Full-time",
-    "description": "Full stack role focusing on Python (FastAPI) and React. Must be comfortable with Docker, Kubernetes, and CI/CD pipelines. Experience with AI agents is highly valued."
+    "description": "InnovateX is looking for a versatile Full Stack Engineer to build features across our entire stack. You will tackle challenges from database schema design to frontend state management. You should be comfortable working with React on the frontend and Node.js on the backend.",
+    "required_skills": ["JavaScript", "Node.js", "React", "MongoDB", "Express.js"],
+    "preferred_skills": ["AWS", "TypeScript", "Docker"]
+  },
+  {
+    "id": "job_6",
+    "title": "Data Scientist",
+    "company": "QuantLogic",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Entry-level",
+    "type": "Full-time",
+    "description": "Dive into our rich datasets to uncover insights that drive business decisions. You will build predictive models and communicate your findings to stakeholders through interactive dashboards. We value a solid foundation in statistics and data visualization.",
+    "required_skills": ["Python", "SQL", "Pandas", "Scikit-learn", "Tableau", "Statistics"],
+    "preferred_skills": ["R", "A/B Testing", "Spark"]
+  },
+  {
+    "id": "job_7",
+    "title": "Robotics Software Engineer",
+    "company": "AutoMech Systems",
+    "location": "Boston, MA",
+    "remote": false,
+    "experience_level": "Mid-level",
+    "type": "Full-time",
+    "description": "Develop and test software for our next generation of autonomous industrial robots. Your work will involve sensor integration, motion planning, and real-time control systems. Experience with C++ and the Robot Operating System (ROS) is highly desired.",
+    "required_skills": ["C++", "Python", "ROS", "Linux", "Algorithms"],
+    "preferred_skills": ["Computer Vision", "Hardware Integration"]
+  },
+  {
+    "id": "job_8",
+    "title": "DevOps Engineer",
+    "company": "CloudScale Partners",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Mid-level",
+    "type": "Full-time",
+    "description": "Take ownership of our cloud infrastructure and deployment pipelines. You will focus on automating infrastructure provisioning and improving system reliability and monitoring. A strong background in AWS and infrastructure as code tools is required.",
+    "required_skills": ["AWS", "Terraform", "CI/CD", "Linux", "Bash", "Docker"],
+    "preferred_skills": ["Kubernetes", "Prometheus", "Ansible"]
+  },
+  {
+    "id": "job_9",
+    "title": "Computer Vision Engineer",
+    "company": "SightLine AI",
+    "location": "San Francisco, CA (Hybrid)",
+    "remote": false,
+    "experience_level": "Senior",
+    "type": "Full-time",
+    "description": "Lead the development of advanced computer vision models for image recognition and object detection. You will guide technical decisions and mentor junior engineers while pushing the boundaries of what our systems can see. Expertise in deep learning frameworks and image processing is a must.",
+    "required_skills": ["Python", "C++", "PyTorch", "OpenCV", "Deep Learning", "System Design"],
+    "preferred_skills": ["CUDA", "TensorRT", "Edge Computing"]
+  },
+  {
+    "id": "job_10",
+    "title": "Data Engineering Intern",
+    "company": "FlowData Inc.",
+    "location": "Seattle, WA",
+    "remote": false,
+    "experience_level": "Intern",
+    "type": "Internship",
+    "description": "Learn the ropes of data engineering by helping us build scalable ETL pipelines. You will assist in writing data ingestion scripts and optimizing data storage solutions. This is a hands-on learning opportunity for someone passionate about big data technologies.",
+    "required_skills": ["Python", "SQL", "Data Structures", "Git"],
+    "preferred_skills": ["Apache Spark", "Airflow", "Cloud Platforms"]
+  },
+  {
+    "id": "job_11",
+    "title": "NLP Engineer",
+    "company": "LinguaTech",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Mid-level",
+    "type": "Full-time",
+    "description": "Join our NLP team to improve our conversational AI and sentiment analysis models. You will be training and fine-tuning large language models on proprietary text data. Strong experience with transformers and Hugging Face libraries is expected.",
+    "required_skills": ["Python", "PyTorch", "NLP", "Transformers", "Hugging Face"],
+    "preferred_skills": ["LLM Fine-tuning", "Vector Databases", "LangChain"]
+  },
+  {
+    "id": "job_12",
+    "title": "Mobile Developer (React Native)",
+    "company": "AppSphere",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Entry-level",
+    "type": "Full-time",
+    "description": "Help us bring our popular web platform to mobile devices using React Native. You will work closely with designers to implement intuitive and performant mobile UI components. This role is perfect for a self-starter eager to grow their mobile development skills.",
+    "required_skills": ["JavaScript", "React Native", "CSS", "Git", "REST APIs"],
+    "preferred_skills": ["TypeScript", "Redux", "Mobile UI Design"]
+  },
+  {
+    "id": "job_13",
+    "title": "AI Platform Engineer",
+    "company": "Nexus ML",
+    "location": "London, UK (Hybrid)",
+    "remote": false,
+    "experience_level": "Senior",
+    "type": "Full-time",
+    "description": "Architect and build the internal platform that empowers our data scientists to train and deploy models efficiently. You will design scalable infrastructure for distributed training and model serving. A deep understanding of Kubernetes and MLOps practices is essential.",
+    "required_skills": ["Python", "Go", "Kubernetes", "AWS/GCP", "MLOps", "Docker"],
+    "preferred_skills": ["Kubeflow", "Ray", "Triton Inference Server"]
+  },
+  {
+    "id": "job_14",
+    "title": "QA Automation Engineer",
+    "company": "QualityFirst",
+    "location": "Remote",
+    "remote": true,
+    "experience_level": "Entry-level",
+    "type": "Full-time",
+    "description": "Ensure the reliability of our software releases by developing and maintaining automated test suites. You will write tests for both frontend applications and backend APIs. Attention to detail and a passion for breaking things are key for this role.",
+    "required_skills": ["Python/JavaScript", "Selenium", "Cypress", "Git", "API Testing"],
+    "preferred_skills": ["CI/CD Pipelines", "Postman", "Agile Methodologies"]
+  },
+  {
+    "id": "job_15",
+    "title": "Embedded Systems Engineer",
+    "company": "CoreHardware",
+    "location": "Detroit, MI",
+    "remote": false,
+    "experience_level": "Mid-level",
+    "type": "Full-time",
+    "description": "Design firmware for our custom microcontroller-based automotive products. You will write low-level code, debug hardware interfaces, and optimize performance for resource-constrained environments. Proficiency in C and experience with RTOS are highly valued.",
+    "required_skills": ["C", "C++", "RTOS", "Microcontrollers", "Debugging"],
+    "preferred_skills": ["Assembly", "Hardware Design", "CAN Bus"]
   }
 ]

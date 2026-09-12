@@ -1,10 +1,5 @@
-fastapi
-uvicorn
 streamlit
 pdfplumber
-chromadb
-langgraph
-langchain
-langchain-groq
 pydantic
 python-dotenv
+groq
