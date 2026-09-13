@@ -145,7 +145,7 @@ theme_css = f"""
     }}
 
     /* Header Bar & Global Clean Overrides */
-    header {{visibility: hidden;}}
+   header {{visibility: visible; background: transparent;}}
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     .stDeployButton {{display: none;}}
