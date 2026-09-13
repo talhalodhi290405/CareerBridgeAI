@@ -1171,32 +1171,30 @@ with main_canvas:
                     _load_demo_profile()
                     st.rerun()
         else:
-            job_selection_method = st.radio(
-                "Job Selection Method",
-                ["Select from Found Jobs", "Enter Custom Job Details"],
-                horizontal=True,
-                key="ats_job_selection_method"
-            )
+            st.markdown('### Select Target Job for ATS Analysis')
+            job_selection_method = st.radio('Job Selection Method:', ['Select from Found Jobs', 'Enter Custom Job Details'], horizontal=True)
 
-            if job_selection_method == "Select from Found Jobs":
-                available_jobs = st.session_state.job_results or load_jobs()
-                job_map = {f"{j.title} — {j.company} ({j.source})": j for j in available_jobs}
-                sel_job_key = st.selectbox("Select Target Job for ATS Analysis:", list(job_map.keys()), index=0, key="ats_select_found_job")
-                target_job = job_map[sel_job_key]
-            else:
-                c_title = st.text_input("Enter Desired Job Title", value="Financial Analyst", key="ats_custom_job_title")
-                c_desc = st.text_area("Paste the Job Description here", height=180, placeholder="Paste full job description, requirements, and responsibilities here...", key="ats_custom_job_desc")
-                req_s, pref_s = _extract_skills_from_description(c_desc or c_title)
+            if job_selection_method == 'Enter Custom Job Details':
+                c_title = st.text_input('Enter Desired Job Title', placeholder='e.g., Cashier', key='custom_job_title')
+                c_desc = st.text_area('Paste the Job Description here', height=180, placeholder='Paste full job description for Adamjee Assurance...', key='custom_job_desc')
+                
+                # Create the custom target job object
                 target_job = JobPosting(
-                    id="custom_manual_job",
-                    title=c_title.strip() or "Custom Target Role",
-                    company="Target Employer",
-                    location="Global",
-                    description=c_desc.strip() or f"{c_title.strip()} job description.",
-                    required_skills=req_s,
-                    preferred_skills=pref_s,
-                    source="Custom Input"
+                    id='custom_manual_job',
+                    title=c_title.strip() if c_title else 'Custom Target Role',
+                    company='Target Employer',
+                    location='Global',
+                    description=c_desc.strip() if c_desc else 'No description provided.',
+                    required_skills=[],
+                    preferred_skills=[],
+                    source='Custom Input'
                 )
+            else:
+                # Existing logic for the dropdown list
+                available_jobs = st.session_state.get('job_results', load_jobs())
+                job_map = {f'{j.title} — {j.company} ({j.source})': j for j in available_jobs}
+                sel_job_key = st.selectbox('Select Target Job:', list(job_map.keys()))
+                target_job = job_map[sel_job_key]
 
             st.session_state.selected_job = target_job
 
