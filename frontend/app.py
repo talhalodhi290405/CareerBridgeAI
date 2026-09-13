@@ -148,7 +148,11 @@ theme_css = f"""
     }}
 
     /* Header Bar & Global Clean Overrides */
-   #MainMenu {{visibility: hidden;}}
+  /* Force top header to match the dark/light background */
+    [data-testid="stHeader"] {{
+        background-color: {bg_main} !important;
+    }}
+    #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     .stDeployButton {{display: none;}}
 
