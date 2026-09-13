@@ -25,23 +25,24 @@ st.set_page_config(
     page_title="CareerBridge AI — AI Career Intelligence Platform",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 st.markdown('''
     <style>
-        /* Hide the 'X' button that allows users to close the sidebar */
-        [data-testid="stSidebarCollapseButton"] {
-            display: none !important;
-        }
-        /* Ensure the collapsed control toggle is also completely hidden */
-        [data-testid="collapsedControl"] {
-            display: none !important;
-        }
-        /* Force the sidebar itself to always render */
-        [data-testid="stSidebar"] {
-            display: block !important;
-            visibility: visible !important;
+        /* Mentor Fix: CSS Media Query for Mobile Responsiveness */
+        @media (max-width: 768px) {
+            /* Force the mobile toggle button to show up */
+            [data-testid="collapsedControl"] {
+                display: flex !important;
+                visibility: visible !important;
+                z-index: 999999 !important;
+            }
+            /* Make the sidebar full width on mobile to prevent overlap issues */
+            [data-testid="stSidebar"] {
+                width: 100vw !important;
+                min-width: 100vw !important;
+            }
         }
     </style>
 ''', unsafe_allow_html=True)
