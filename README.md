@@ -2,9 +2,6 @@
 
 > **Autonomous Talent Triage, Profile Optimization & Live Career Command Center**
 
-![Uploading Gemini_Generated_Image_m29qj5m29qj5m29q.jpeg…]()
-
-
 
 ---
 
