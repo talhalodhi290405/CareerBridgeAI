@@ -479,7 +479,7 @@ with st.sidebar:
     current_label = [l for l, k in nav_map.items() if k == st.session_state.nav_section]
     curr_idx = all_nav_items.index(current_label[0]) if current_label else 0
 
-    selected_label = st.radio("Select View", all_nav_items, index=curr_idx, key="side_nav_radio")
+    selected_label = st.radio("Select View", all_nav_items, index=curr_idx)
     new_sec = nav_map[selected_label]
     if new_sec != st.session_state.nav_section:
         st.session_state.nav_section = new_sec
