@@ -931,6 +931,9 @@ with main_canvas:
                 try:
                     with st.spinner("Agent: Querying live job APIs & matching candidate embeddings..."):
                         jobs, msg = search_live_jobs(st.session_state.search_filters)
+                        if not jobs:
+                            jobs = load_jobs()
+                            msg = "Live API returned 0 results. Loaded verified partner jobs."
                         st.session_state.job_results = jobs
                         st.session_state.job_status_msg = msg
                 except Exception as e:
@@ -1174,11 +1177,15 @@ with main_canvas:
                     source='Custom Input'
                 )
             else:
-                # Existing logic for the dropdown list
-                available_jobs = st.session_state.get('job_results', load_jobs())
+                # Safe fallback: if job_results is empty or None, load offline dataset
+                available_jobs = st.session_state.get('job_results')
+                if not available_jobs:
+                    available_jobs = load_jobs()
+
                 job_map = {f'{j.title} — {j.company} ({j.source})': j for j in available_jobs}
-                sel_job_key = st.selectbox('Select Target Job:', list(job_map.keys()))
-                target_job = job_map[sel_job_key]
+                job_options = list(job_map.keys())
+                sel_job_key = st.selectbox('Select Target Job:', job_options) if job_options else None
+                target_job = job_map.get(sel_job_key) if sel_job_key else available_jobs[0]
 
             st.session_state.selected_job = target_job
 
