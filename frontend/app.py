@@ -6,6 +6,7 @@ Run with: streamlit run frontend/app.py
 import sys
 import os
 import hashlib
+import urllib.parse
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 
