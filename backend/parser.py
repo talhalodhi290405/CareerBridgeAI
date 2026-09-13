@@ -151,16 +151,16 @@ def classify_document_type(text: str) -> Dict[str, Any]:
 
 def validate_pdf_resume(file_bytes: bytes, filename: str = "") -> DocumentValidationResult:
     """Validate a file upload for CV resume parsing.
-    Checks size, signature, parsability, text length, and document classification."""
-    file_size_mb = round(len(file_bytes) / (1024 * 1024), 2)
+    Checks signature, parsability, text length, and CV keywords."""
+    file_size_mb = round(len(file_bytes) / (1024 * 1024), 2) if file_bytes else 0.0
 
-    # 1. Size Guard (100 MB max)
-    if file_size_mb > 100.0:
+    # 1. File Type Check: Inspect incoming file_bytes signature
+    if not file_bytes or not file_bytes.startswith(b'%PDF'):
         return DocumentValidationResult(
             accepted=False,
             document_type="UNKNOWN",
-            reason="EXCEEDS_MAX_SIZE",
-            user_message="File is too large. Maximum allowed size is 100 MB.",
+            reason="Invalid File Type",
+            user_message="Invalid file format. Only PDF files are accepted.",
             file_size_mb=file_size_mb,
             is_pdf=False,
             is_parsable=False,
@@ -168,62 +168,9 @@ def validate_pdf_resume(file_bytes: bytes, filename: str = "") -> DocumentValida
             confidence=0.0
         )
 
-    # 2. Empty File Check
-    if len(file_bytes) == 0:
-        return DocumentValidationResult(
-            accepted=False,
-            document_type="UNKNOWN",
-            reason="EMPTY_FILE",
-            user_message="The uploaded file is empty. Please choose a valid PDF resume.",
-            file_size_mb=0.0,
-            is_pdf=False,
-            is_parsable=False,
-            text_length=0,
-            confidence=0.0
-        )
-
-    # 3. Filename Extension Check (if provided)
-    if filename:
-        clean_ext = filename.lower().split('.')[-1] if '.' in filename else ''
-        if clean_ext and clean_ext != 'pdf':
-            return DocumentValidationResult(
-                accepted=False,
-                document_type="UNKNOWN",
-                reason="INVALID_FILE_FORMAT",
-                user_message="PDF files only. Please upload your CV as a PDF.",
-                file_size_mb=file_size_mb,
-                is_pdf=False,
-                is_parsable=False,
-                text_length=0,
-                confidence=0.0
-            )
-
-    # 4. File Magic Signature Check
-    is_pdf_signature = b"%PDF-" in file_bytes[:1024]
-    if not is_pdf_signature:
-        return DocumentValidationResult(
-            accepted=False,
-            document_type="UNKNOWN",
-            reason="INVALID_PDF_SIGNATURE",
-            user_message="This file is not a valid PDF. Please upload a valid PDF resume.",
-            file_size_mb=file_size_mb,
-            is_pdf=False,
-            is_parsable=False,
-            text_length=0,
-            confidence=0.0
-        )
-
-    # 5. PDF Parsability Check
-    try:
-        with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
-            pages_text = []
-            for page in pdf.pages:
-                txt = page.extract_text()
-                if txt:
-                    pages_text.append(txt)
-            raw_text = "\n".join(pages_text) if pages_text else ""
-    except Exception as e:
-        logger.warning(f"Corrupted PDF detection: {e}")
+    # 2. PDF Parsability Check
+    raw_text = extract_text_from_pdf(file_bytes) or ""
+    if not raw_text:
         return DocumentValidationResult(
             accepted=False,
             document_type="UNKNOWN",
@@ -236,21 +183,25 @@ def validate_pdf_resume(file_bytes: bytes, filename: str = "") -> DocumentValida
             confidence=0.0
         )
 
-    # 6. Image-only / Text Length Check
-    if not raw_text or len(raw_text.strip()) < 30 or len(raw_text.split()) < 8:
+    # 3. Content Check: Convert text to lowercase & verify >= 2 standard CV keywords
+    text_lower = raw_text.lower()
+    cv_keywords = ['experience', 'education', 'skills', 'summary', 'work', 'university', 'resume', 'projects', 'employment', 'profile', 'contact', 'curriculum vitae']
+    matched_keywords = [kw for kw in cv_keywords if kw in text_lower]
+
+    if len(matched_keywords) < 2:
         return DocumentValidationResult(
             accepted=False,
             document_type="UNKNOWN",
-            reason="IMAGE_ONLY_OR_NO_TEXT",
-            user_message="This PDF contains little or no extractable text. Please upload a text-based CV PDF or use manual profile entry.",
+            reason="Not a CV",
+            user_message="This document does not appear to be a professional CV. Please upload a valid resume.",
             file_size_mb=file_size_mb,
             is_pdf=True,
             is_parsable=True,
-            text_length=len(raw_text) if raw_text else 0,
+            text_length=len(raw_text),
             confidence=0.0
         )
 
-    # 7. Document Classification
+    # 4. Document Classification check
     cls_res = classify_document_type(raw_text)
     doc_type = cls_res["document_type"]
     conf = cls_res["confidence"]
@@ -281,20 +232,7 @@ def validate_pdf_resume(file_bytes: bytes, filename: str = "") -> DocumentValida
             confidence=conf
         )
 
-    if doc_type in ["GENERAL_DOCUMENT", "UNKNOWN"]:
-        return DocumentValidationResult(
-            accepted=False,
-            document_type=doc_type,
-            reason="REJECTED_UNRELATED_DOC",
-            user_message="This PDF does not appear to be a CV/resume. Please upload your resume/CV.",
-            file_size_mb=file_size_mb,
-            is_pdf=True,
-            is_parsable=True,
-            text_length=len(raw_text),
-            confidence=conf
-        )
-
-    # ACCEPTED CV!
+    # ACCEPTED CV
     return DocumentValidationResult(
         accepted=True,
         document_type="CV",
