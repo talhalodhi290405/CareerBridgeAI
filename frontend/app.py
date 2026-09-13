@@ -25,7 +25,7 @@ st.set_page_config(
     page_title="CareerBridge AI — AI Career Intelligence Platform",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 # ---------------------------------------------------------------------------
@@ -134,7 +134,7 @@ theme_css = f"""
         color: {text_color} !important;
     }}
 
-    /* Sidebar Base Styling */
+    /* Sidebar Base Styling - Native Responsive */
     [data-testid="stSidebar"] {{
         background-color: {bg_sidebar} !important;
         border-right: 1px solid {border_color} !important;
@@ -149,16 +149,10 @@ theme_css = f"""
     [data-testid="stSidebar"] button {{
         text-align: left !important;
         justify-content: flex-start !important;
-        border: none !important;
-        border-radius: 0.5rem !important;
-        padding: 0.55rem 0.85rem !important;
         font-size: 0.88rem !important;
         font-weight: 500 !important;
         color: {subtext_color} !important;
-        background-color: transparent !important;
-        box-shadow: none !important;
         margin-bottom: 0.15rem !important;
-        transition: all 0.15s ease-in-out !important;
     }}
 
     [data-testid="stSidebar"] button:hover {{
@@ -169,10 +163,9 @@ theme_css = f"""
     /* Active Nav Item Styling */
     [data-testid="stSidebar"] button[kind="primary"],
     [data-testid="stSidebar"] button[data-testid="baseButton-primary"] {{
-        background: {'linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)' if is_dark_mode else '#2563EB'} !important;
+        background: {'#4F46E5' if is_dark_mode else '#2563EB'} !important;
         color: #FFFFFF !important;
         font-weight: 700 !important;
-        border-left: 4px solid {'#818CF8' if is_dark_mode else '#60A5FA'} !important;
     }}
 
     .sidebar-brand {{
