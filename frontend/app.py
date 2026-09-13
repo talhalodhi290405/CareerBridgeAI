@@ -25,26 +25,23 @@ st.set_page_config(
     page_title="CareerBridge AI — AI Career Intelligence Platform",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
 
-# --- EMERGENCY SIDEBAR TOGGLE FIX ---
 st.markdown('''
     <style>
-        /* Force the sidebar toggle button to ALWAYS be visible when closed */
-        [data-testid="collapsedControl"] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 999999 !important;
-            background-color: #1E88E5 !important;
-            border-radius: 5px !important;
-            margin: 10px !important;
+        /* Hide the 'X' button that allows users to close the sidebar */
+        [data-testid="stSidebarCollapseButton"] {
+            display: none !important;
         }
-        /* Make the icon inside it white */
-        [data-testid="collapsedControl"] svg {
-            color: white !important;
-            fill: white !important;
+        /* Ensure the collapsed control toggle is also completely hidden */
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+        /* Force the sidebar itself to always render */
+        [data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
         }
     </style>
 ''', unsafe_allow_html=True)
