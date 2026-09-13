@@ -427,37 +427,58 @@ nav_categories = [
 ]
 
 with st.sidebar:
-    st.markdown('<div class="sidebar-brand">🚀 CareerBridge AI</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sidebar-sub">AI Career Intelligence Platform</div>', unsafe_allow_html=True)
-    
-    # Theme Toggle Buttons
-    t1, t2 = st.columns([1, 1])
-    with t1:
-        if st.button("🌙 Dark", key="t_btn_dark", type="primary" if is_dark_mode else "secondary", use_container_width=True):
-            if not is_dark_mode:
-                st.session_state.is_dark_mode = True
-                st.session_state.theme_mode = "dark"
-                _persist_state()
-                st.rerun()
-    with t2:
-        if st.button("☀️ Light", key="t_btn_light", type="primary" if not is_dark_mode else "secondary", use_container_width=True):
-            if is_dark_mode:
-                st.session_state.is_dark_mode = False
-                st.session_state.theme_mode = "light"
-                _persist_state()
-                st.rerun()
+    st.header("🚀 CareerBridge AI")
+    st.caption("AI Career Intelligence Platform")
+    st.divider()
 
-    st.markdown("---")
+    theme_choice = st.radio("Appearance", ["Light Mode", "Dark Mode"], index=1 if is_dark_mode else 0, key="side_theme_radio")
+    new_dark = (theme_choice == "Dark Mode")
+    if new_dark != is_dark_mode:
+        st.session_state.is_dark_mode = new_dark
+        st.session_state.theme_mode = "dark" if new_dark else "light"
+        _persist_state()
+        st.rerun()
 
-    for cat_name, items in nav_categories:
-        st.markdown(f'<div class="sidebar-cat">{cat_name}</div>', unsafe_allow_html=True)
-        for label, sec_key in items:
-            is_active = (st.session_state.nav_section == sec_key)
-            if st.button(label, key=f"snav_{sec_key}", type="primary" if is_active else "secondary", use_container_width=True):
-                if st.session_state.nav_section != sec_key:
-                    st.session_state.nav_section = sec_key
-                    _persist_state()
-                    st.rerun()
+    st.divider()
+    st.subheader("Navigation")
+
+    all_nav_items = [
+        "📊 Dashboard",
+        "🔍 Find Jobs",
+        "👤 My CV",
+        "📊 ATS Scanner",
+        "✨ Improve CV",
+        "✉️ Cover Letter",
+        "📁 Applications",
+        "🤖 AI Career Coach",
+        "📈 Analytics",
+        "⚙️ Settings",
+        "🚀 Guided Golden Path",
+    ]
+
+    nav_map = {
+        "📊 Dashboard": "Dashboard",
+        "🔍 Find Jobs": "Find Jobs",
+        "👤 My CV": "My CV",
+        "📊 ATS Scanner": "ATS Scanner",
+        "✨ Improve CV": "Improve CV",
+        "✉️ Cover Letter": "Cover Letter",
+        "📁 Applications": "Applications",
+        "🤖 AI Career Coach": "AI Career Coach",
+        "📈 Analytics": "Analytics",
+        "⚙️ Settings": "Settings",
+        "🚀 Guided Golden Path": "Guided Golden Path",
+    }
+
+    current_label = [l for l, k in nav_map.items() if k == st.session_state.nav_section]
+    curr_idx = all_nav_items.index(current_label[0]) if current_label else 0
+
+    selected_label = st.radio("Select View", all_nav_items, index=curr_idx, key="side_nav_radio")
+    new_sec = nav_map[selected_label]
+    if new_sec != st.session_state.nav_section:
+        st.session_state.nav_section = new_sec
+        _persist_state()
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------
