@@ -2,6 +2,7 @@
 
 > **Autonomous Talent Triage, Profile Optimization & Live Career Command Center**
 
+![CareerBridge AI Banner](assets/banner.jpg)
 
 ---
 
