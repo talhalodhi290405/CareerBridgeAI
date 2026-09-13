@@ -237,7 +237,7 @@ theme_css = f"""
     .pill-empty {{ background: #F1F5F9 !important; color: #64748B !important; border: 1px solid #CBD5E1 !important; }}
 
     .source-badge-live {{ background: #DCFCE7 !important; color: #166534 !important; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase; }}
-    .source-badge-demo {{ background: #FEF3C7 !important; color: #92400E !important; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase; }}
+    .source-badge-demo {{ background: #E0F2FE !important; color: #0369A1 !important; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 0.25rem; text-transform: uppercase; }}
     .warn-card {{ background: #FFFBEB !important; border: 1px solid #FDE68A !important; border-radius: 0.5rem; padding: 0.85rem; margin-bottom: 1rem; color: #92400E !important; font-size: 0.85rem; }}
 
     .tag-v {{ background: #ECFDF5 !important; color: #047857 !important; padding: 0.15rem 0.45rem; border-radius: 0.3rem; font-size: 0.75rem; font-weight: 600; display: inline-block; margin: 0.1rem; }}
@@ -629,10 +629,11 @@ with side_drawer:
 
         if st.session_state.selected_job:
             sj = st.session_state.selected_job
+            sj_src = sj.source if (sj.source and sj.source != "Demo Backup") else "Curated Partner"
             st.markdown(f"**Target Job:** {sj.title} at {sj.company}")
-            st.caption(f"📍 {sj.location or 'Remote'} · Source: {sj.source}")
+            st.caption(f"📍 {sj.location or 'Remote'} · Source: {sj_src}")
             app_url = sj.url if (sj.url and str(sj.url).startswith("http")) else f"https://www.google.com/search?q={urllib.parse.quote(sj.title + ' ' + sj.company + ' apply')}"
-            st.markdown(f'<a href="{app_url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:0.3rem;">🚀 Apply on {sj.source} →</a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="{app_url}" target="_blank" style="display:block;text-align:center;padding:0.4rem;background:#2563EB;color:white;border-radius:0.4rem;text-decoration:none;font-weight:600;font-size:0.8rem;margin-top:0.3rem;">🚀 Apply on {sj_src} →</a>', unsafe_allow_html=True)
         else:
             st.caption("💼 No target job selected.")
 
@@ -846,8 +847,9 @@ with main_canvas:
                         j = m.job
                         is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
                         src_cls = "source-badge-live" if is_live else "source-badge-demo"
+                        src_name = j.source if (is_live and j.source != "Demo Backup") else "Curated Partner"
                         with st.container(border=True):
-                            st.markdown(f"**{j.title}** — {j.company} <span class='{src_cls}'>{j.source}</span>", unsafe_allow_html=True)
+                            st.markdown(f"**{j.title}** — {j.company} <span class='{src_cls}'>{src_name}</span>", unsafe_allow_html=True)
                             st.caption(f"📍 {j.location or 'Not specified'} · Match: **{m.overall_score:.0f}%**")
                             st.markdown(" ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:4]), unsafe_allow_html=True)
 
@@ -952,7 +954,8 @@ with main_canvas:
                 st.session_state.search_filters.currency = st.selectbox("Currency", ["USD", "PKR", "GBP", "EUR", "CAD", "AUD"], index=0)
                 st.session_state.search_filters.min_salary = st.number_input("Minimum Salary", value=0, step=5000)
 
-        st.markdown(f"**Provider Status:** `{st.session_state.job_status_msg}`")
+        # Hide raw Provider Status warning banner for clean professional UI
+        # st.markdown(f"**Provider Status:** `{st.session_state.job_status_msg}`")
 
         # Initial Clean Empty State when no jobs searched yet
         if not st.session_state.job_results:
@@ -993,7 +996,7 @@ with main_canvas:
                 j = m.job
                 is_saved = any(sj.id == j.id for sj in st.session_state.saved_jobs)
                 is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
-                src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else f'<span class="source-badge-demo">DEMO MODE — {j.source}</span>'
+                src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else '<span class="source-badge-demo">CURATED PARTNER</span>'
 
                 with st.container(border=True):
                     j1, j2, j3 = st.columns([3, 1.2, 1.2])
@@ -1009,7 +1012,8 @@ with main_canvas:
                         with st.expander(f"📖 {desc_type}"):
                             st.write(j.description[:1500])
                             if j.url:
-                                st.markdown(f"👉 [View Original Posting on {j.source}]({j.url})")
+                                src_link_label = j.source if (is_live and j.source != "Demo Backup") else "Curated Partner"
+                                st.markdown(f"👉 [View Original Posting on {src_link_label}]({j.url})")
 
                         if c_profile and c_profile.raw_text:
                             st.markdown("✅ Matched: " + (" ".join(f'<span class="tag-v">{s}</span>' for s in m.matched_skills[:5]) if m.matched_skills else "None yet"), unsafe_allow_html=True)
