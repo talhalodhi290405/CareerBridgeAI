@@ -16,33 +16,22 @@ def run_productization_tests():
 
     results = {}
 
-    # Test 1: Local Session Storage Persistence
-    print("\n[Test 1] Local Session Storage Persistence (storage.py)")
+    # Test 1: Stateless Session Storage & Isolation
+    print("\n[Test 1] Stateless Session Storage & Isolation (storage.py)")
     try:
         from backend.storage import save_session_state, load_session_state
         from backend.demo import get_demo_candidate
-        from backend.models import JobSearchFilters, CoachMessage
 
         cand = get_demo_candidate()
-        cand.name = "Test Persistent Candidate"
-        filters = JobSearchFilters(desired_role="AI Engineer", city="Lahore")
-        history = [CoachMessage(role="user", content="Hello", timestamp="12:00")]
-
-        state_to_save = {
-            "candidate": cand,
-            "search_filters": filters,
-            "coach_history": history,
-            "is_demo": False
-        }
+        cand.name = "Test Candidate"
+        state_to_save = {"candidate": cand}
 
         save_success = save_session_state(state_to_save)
         assert save_success is True, "save_session_state failed"
 
         restored = load_session_state()
-        assert restored.get("candidate") is not None
-        assert restored["candidate"].name == "Test Persistent Candidate"
-        assert restored["search_filters"].desired_role == "AI Engineer"
-        print("  [OK] Session state saved and restored from data/user_session.json successfully!")
+        assert restored == {}, "load_session_state should return empty dict to enforce session isolation"
+        print("  [OK] Session state is isolated in memory; no shared disk leakage.")
         results[1] = "PASS"
     except Exception as e:
         print(f"  [FAIL] Failed: {e}")

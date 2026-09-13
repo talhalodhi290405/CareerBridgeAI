@@ -82,17 +82,13 @@ _defaults = {
     "is_dark_mode": False,
 }
 
-restored_storage = load_session_state()
-
 for k, v in _defaults.items():
     if k not in st.session_state:
-        if k in restored_storage:
-            st.session_state[k] = restored_storage[k]
-        else:
-            st.session_state[k] = v
+        st.session_state[k] = v
 
 def _persist_state():
-    save_session_state(dict(st.session_state))
+    # Session state is strictly isolated in-memory per user session by Streamlit.
+    pass
 
 # 1. Determine theme state from session state safely
 is_dark_mode = st.session_state.get('is_dark_mode', st.session_state.get('theme_mode') == 'dark')
