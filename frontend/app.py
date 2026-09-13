@@ -28,6 +28,23 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+st.markdown('''
+    <style>
+        /* Force the mobile sidebar toggle button to be visible and click-able */
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+            z-index: 999999 !important;
+            background-color: #1E88E5 !important; /* Adds a blue background so it stands out */
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        /* Make the icon inside it white */
+        [data-testid="collapsedControl"] svg {
+            color: white !important;
+        }
+    </style>
+''', unsafe_allow_html=True)
+
 # ---------------------------------------------------------------------------
 # Backend Imports
 # ---------------------------------------------------------------------------
