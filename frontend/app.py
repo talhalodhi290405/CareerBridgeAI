@@ -145,7 +145,7 @@ theme_css = f"""
     }}
 
     /* Header Bar & Global Clean Overrides */
-   header {{visibility: visible; background: transparent;}}
+   [data-testid="stToolbar"] {{visibility: hidden !important;}}
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     .stDeployButton {{display: none;}}
