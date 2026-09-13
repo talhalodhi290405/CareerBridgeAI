@@ -43,7 +43,7 @@ from backend.rag_engine import load_jobs, match_candidate_to_jobs
 from backend.ats_engine import analyze_ats, analyze_gaps
 from backend.optimizer import optimize_profile
 from backend.outreach import generate_outreach
-from backend.job_service import search_live_jobs, get_adzuna_credentials
+from backend.job_service import search_live_jobs, get_adzuna_credentials, _extract_skills_from_description
 from backend.cover_letter import generate_cover_letter
 from backend.coach import ask_career_coach
 from backend.storage import save_session_state, load_session_state
@@ -361,6 +361,14 @@ def infer_candidate_primary_role(cand: Optional[CandidateProfile]) -> str:
             return "Software Engineer"
         if any(k in skills_upper for k in ["SQL", "PANDAS", "PYTHON", "POWER BI", "TABLEAU", "DATA ANALYSIS"]):
             return "Data Scientist"
+        if any(k in skills_upper for k in ["FINANCE", "FINANCIAL", "ACCOUNTING", "VALUATION", "EXCEL", "BANKING", "AUDIT"]):
+            return "Financial Analyst"
+        if any(k in skills_upper for k in ["MARKETING", "SEO", "CONTENT", "COPYWRITING", "SOCIAL MEDIA", "BRAND"]):
+            return "Marketing Manager"
+        if any(k in skills_upper for k in ["HR", "RECRUITING", "TALENT", "HUMAN RESOURCES", "PEOPLE"]):
+            return "HR Manager"
+        if any(k in skills_upper for k in ["HEALTHCARE", "NURSING", "CLINICAL", "PATIENT", "MEDICAL"]):
+            return "Healthcare Administrator"
 
     return "Software Engineer"
 
@@ -927,7 +935,12 @@ with main_canvas:
         st.markdown("#### What role are you looking for?")
         s_col1, s_col2 = st.columns([3, 1])
         with s_col1:
-            query_input = st.text_input("Role Title", value=st.session_state.search_filters.desired_role, placeholder="e.g. AI Engineer, Machine Learning, Python, Software Engineer", label_visibility="collapsed")
+            query_input = st.text_input(
+                "Search for any job role globally (e.g., Financial Analyst, HR Manager)...",
+                value=st.session_state.search_filters.desired_role,
+                placeholder="Search for any job role globally (e.g., Financial Analyst, HR Manager)...",
+                key="global_job_role_search_input"
+            )
             st.session_state.search_filters.desired_role = query_input
         with s_col2:
             if st.button("Search Live Jobs", type="primary", use_container_width=True, key="search_trigger"):
@@ -1158,11 +1171,33 @@ with main_canvas:
                     _load_demo_profile()
                     st.rerun()
         else:
-            available_jobs = st.session_state.job_results or load_jobs()
-            job_map = {f"{j.title} — {j.company} ({j.source})": j for j in available_jobs}
+            job_selection_method = st.radio(
+                "Job Selection Method",
+                ["Select from Found Jobs", "Enter Custom Job Details"],
+                horizontal=True,
+                key="ats_job_selection_method"
+            )
 
-            sel_job_key = st.selectbox("Select Target Job for ATS Analysis:", list(job_map.keys()), index=0)
-            target_job = job_map[sel_job_key]
+            if job_selection_method == "Select from Found Jobs":
+                available_jobs = st.session_state.job_results or load_jobs()
+                job_map = {f"{j.title} — {j.company} ({j.source})": j for j in available_jobs}
+                sel_job_key = st.selectbox("Select Target Job for ATS Analysis:", list(job_map.keys()), index=0, key="ats_select_found_job")
+                target_job = job_map[sel_job_key]
+            else:
+                c_title = st.text_input("Enter Desired Job Title", value="Financial Analyst", key="ats_custom_job_title")
+                c_desc = st.text_area("Paste the Job Description here", height=180, placeholder="Paste full job description, requirements, and responsibilities here...", key="ats_custom_job_desc")
+                req_s, pref_s = _extract_skills_from_description(c_desc or c_title)
+                target_job = JobPosting(
+                    id="custom_manual_job",
+                    title=c_title.strip() or "Custom Target Role",
+                    company="Target Employer",
+                    location="Global",
+                    description=c_desc.strip() or f"{c_title.strip()} job description.",
+                    required_skills=req_s,
+                    preferred_skills=pref_s,
+                    source="Custom Input"
+                )
+
             st.session_state.selected_job = target_job
 
             if st.button("🚀 Run Deterministic ATS Check", type="primary", use_container_width=True):

@@ -132,7 +132,7 @@ def fetch_jobicy_jobs(query: str = "", limit: int = 15) -> list[JobPosting]:
     """Fetch jobs from Jobicy free REST API."""
     url = f"https://jobicy.com/api/v2/remote-jobs?count={limit}"
     if query:
-        url += f"&geo={urllib.parse.quote(query)}"
+        url += f"&tag={urllib.parse.quote(query)}"
     
     logger.info(f"Querying Jobicy API: {url}")
     try:
