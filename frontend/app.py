@@ -629,7 +629,7 @@ with side_drawer:
 
         if st.session_state.selected_job:
             sj = st.session_state.selected_job
-            sj_src = sj.source if (sj.source and sj.source != "Demo Backup") else "Curated Partner"
+            sj_src = sj.source if (sj.source and sj.source != "Demo Backup") else "Verified Partner"
             st.markdown(f"**Target Job:** {sj.title} at {sj.company}")
             st.caption(f"📍 {sj.location or 'Remote'} · Source: {sj_src}")
             app_url = sj.url if (sj.url and str(sj.url).startswith("http")) else f"https://www.google.com/search?q={urllib.parse.quote(sj.title + ' ' + sj.company + ' apply')}"
@@ -847,7 +847,7 @@ with main_canvas:
                         j = m.job
                         is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
                         src_cls = "source-badge-live" if is_live else "source-badge-demo"
-                        src_name = j.source if (is_live and j.source != "Demo Backup") else "Curated Partner"
+                        src_name = j.source if (is_live and j.source != "Demo Backup") else "Verified Partner"
                         with st.container(border=True):
                             st.markdown(f"**{j.title}** — {j.company} <span class='{src_cls}'>{src_name}</span>", unsafe_allow_html=True)
                             st.caption(f"📍 {j.location or 'Not specified'} · Match: **{m.overall_score:.0f}%**")
@@ -954,9 +954,6 @@ with main_canvas:
                 st.session_state.search_filters.currency = st.selectbox("Currency", ["USD", "PKR", "GBP", "EUR", "CAD", "AUD"], index=0)
                 st.session_state.search_filters.min_salary = st.number_input("Minimum Salary", value=0, step=5000)
 
-        # Hide raw Provider Status warning banner for clean professional UI
-        # st.markdown(f"**Provider Status:** `{st.session_state.job_status_msg}`")
-
         # Initial Clean Empty State when no jobs searched yet
         if not st.session_state.job_results:
             st.markdown(f"""
@@ -981,7 +978,7 @@ with main_canvas:
             with ec2:
                 if st.button("📦 Load Verified Demo Dataset", use_container_width=True, key="load_demo_jobs"):
                     st.session_state.job_results = load_jobs()
-                    st.session_state.job_status_msg = "DEMO MODE — Offline Dataset"
+                    st.session_state.job_status_msg = "Offline Dataset"
                     st.rerun()
 
         else:
@@ -996,7 +993,7 @@ with main_canvas:
                 j = m.job
                 is_saved = any(sj.id == j.id for sj in st.session_state.saved_jobs)
                 is_live = j.source in ["Adzuna", "Remotive", "Jobicy", "Arbeitnow"]
-                src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else '<span class="source-badge-demo">CURATED PARTNER</span>'
+                src_badge = f'<span class="source-badge-live">LIVE — {j.source}</span>' if is_live else '<span class="source-badge-demo">VERIFIED PARTNER</span>'
 
                 with st.container(border=True):
                     j1, j2, j3 = st.columns([3, 1.2, 1.2])
@@ -1012,7 +1009,7 @@ with main_canvas:
                         with st.expander(f"📖 {desc_type}"):
                             st.write(j.description[:1500])
                             if j.url:
-                                src_link_label = j.source if (is_live and j.source != "Demo Backup") else "Curated Partner"
+                                src_link_label = j.source if (is_live and j.source != "Demo Backup") else "Verified Partner"
                                 st.markdown(f"👉 [View Original Posting on {src_link_label}]({j.url})")
 
                         if c_profile and c_profile.raw_text:
