@@ -115,7 +115,10 @@ theme_css = f"""
         font-family: 'Inter', -apple-system, sans-serif;
         color: {text_color} !important;
     }}
-
+    /* Fix: Force sidebar background to match the theme */
+    [data-testid="stSidebar"] {{
+        background-color: {bg_sidebar} !important;
+    }}
     /* Custom cards background and text */
     .dash-card, .metric-box, .top-bar-container {{
         background-color: {bg_card} !important;
