@@ -28,19 +28,23 @@ st.set_page_config(
     initial_sidebar_state="auto",
 )
 
+# --- EMERGENCY SIDEBAR TOGGLE FIX ---
 st.markdown('''
     <style>
-        /* Force the mobile sidebar toggle button to be visible and click-able */
+        /* Force the sidebar toggle button to ALWAYS be visible when closed */
         [data-testid="collapsedControl"] {
             display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
             z-index: 999999 !important;
-            background-color: #1E88E5 !important; /* Adds a blue background so it stands out */
-            border-radius: 4px;
-            margin-top: 10px;
+            background-color: #1E88E5 !important;
+            border-radius: 5px !important;
+            margin: 10px !important;
         }
         /* Make the icon inside it white */
         [data-testid="collapsedControl"] svg {
             color: white !important;
+            fill: white !important;
         }
     </style>
 ''', unsafe_allow_html=True)
