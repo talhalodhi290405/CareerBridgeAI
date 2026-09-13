@@ -25,27 +25,8 @@ st.set_page_config(
     page_title="CareerBridge AI — AI Career Intelligence Platform",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="expanded",
 )
-
-st.markdown('''
-    <style>
-        /* Mentor Fix: CSS Media Query for Mobile Responsiveness */
-        @media (max-width: 768px) {
-            /* Force the mobile toggle button to show up */
-            [data-testid="collapsedControl"] {
-                display: flex !important;
-                visibility: visible !important;
-                z-index: 999999 !important;
-            }
-            /* Make the sidebar full width on mobile to prevent overlap issues */
-            [data-testid="stSidebar"] {
-                width: 100vw !important;
-                min-width: 100vw !important;
-            }
-        }
-    </style>
-''', unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
 # Backend Imports
@@ -149,39 +130,7 @@ theme_css = f"""
         color: {text_color} !important;
     }}
 
-    /* Sidebar Base Styling - Native Responsive */
-    [data-testid="stSidebar"] {{
-        background-color: {bg_sidebar} !important;
-        border-right: 1px solid {border_color} !important;
-    }}
 
-    /* Hide native radio buttons in sidebar */
-    [data-testid="stSidebar"] div[role="radiogroup"] {{
-        display: none !important;
-    }}
-
-    /* Sidebar Custom Buttons */
-    [data-testid="stSidebar"] button {{
-        text-align: left !important;
-        justify-content: flex-start !important;
-        font-size: 0.88rem !important;
-        font-weight: 500 !important;
-        color: {subtext_color} !important;
-        margin-bottom: 0.15rem !important;
-    }}
-
-    [data-testid="stSidebar"] button:hover {{
-        color: #FFFFFF !important;
-        background-color: {'#1E293B' if is_dark_mode else '#E2E8F0'} !important;
-    }}
-
-    /* Active Nav Item Styling */
-    [data-testid="stSidebar"] button[kind="primary"],
-    [data-testid="stSidebar"] button[data-testid="baseButton-primary"] {{
-        background: {'#4F46E5' if is_dark_mode else '#2563EB'} !important;
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-    }}
 
     .sidebar-brand {{
         font-size: 1.25rem; font-weight: 800; color: {text_color} !important;
