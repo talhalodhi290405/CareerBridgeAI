@@ -11,9 +11,6 @@
 ### 🌐 Live Production Application
 👉 **[https://careerbridgeai.streamlit.app/](https://careerbridgeai.streamlit.app/)**
 
-### 📹 3.5-Minute Demo Video
-🎥 **[Watch Demo Video on YouTube](Link coming soon)**
-
 ---
 
 ## 💡 System Overview & Core Capabilities
